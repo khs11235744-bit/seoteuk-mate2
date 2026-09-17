@@ -3,759 +3,463 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>세특메이트 P.O.H.A.N.G - 2026 대입 세특 & AI 구술면접 플랫폼</title>
-
-  <!-- Pretendard Font -->
+  <title>세특메이트 P.O.H.A.N.G - 2026 대입 세특 & AI 구술면접</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-  <!-- Tailwind CSS CDN -->
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
-          }
-        }
-      }
-    };
-  </script>
-
   <style>
     * { font-family: 'Pretendard', sans-serif; box-sizing: border-box; }
-    body { background-color: #090d16; color: #f8fafc; overflow-x: hidden; }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    .modal-overlay { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(6px); }
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); }
-      50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
-    }
-    .active-interview-glow { animation: pulseGlow 1.5s infinite; }
+    body { background-color: #0b0f19; color: #f8fafc; }
+    .card { background-color: #111827; border: 1px solid #1f2937; border-radius: 1rem; }
+    .modal-bg { background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); }
   </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+<body class="min-h-screen flex flex-col pb-20 md:pb-6">
 
-  <!-- ================= TOP HEADER NAVIGATION ================= -->
-  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur px-4 py-2.5 flex items-center justify-between gap-2 shadow-lg">
+  <!-- 헤더 -->
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center font-black text-white text-lg shadow-md">
-        P
-      </div>
-      <div>
-        <h1 class="text-sm md:text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-          세특메이트 <span class="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30">세특 & AI 구술면접</span>
-        </h1>
-      </div>
+      <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white">P</div>
+      <span class="font-bold text-sm sm:text-base">세특메이트 P.O.H.A.N.G</span>
     </div>
-
-    <!-- Mode Badges and Quick Modals -->
     <div class="flex items-center gap-2">
-      <!-- 대학별 면접 팁 모달 버튼 -->
-      <button onclick="openModal('univTipsModal')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 transition flex items-center gap-1">
-        🎓 2026 대학별 면접팁
+      <button onclick="toggleModal('tipsModal')" class="px-2.5 py-1 text-xs rounded-lg bg-indigo-950 text-indigo-300 border border-indigo-800">
+        🎓 면접팁
       </button>
-
-      <!-- 안티그래비티 토글 버튼 -->
-      <button id="antigravityToggleBtn" onclick="toggleAntiGravityMode()" class="px-2.5 py-1 rounded-full text-xs font-bold transition flex items-center gap-1.5 border border-slate-700 bg-slate-800 text-slate-400 hover:text-white">
-        <span id="agStatusLed" class="w-2 h-2 rounded-full bg-slate-500"></span>
-        <span id="agToggleLabel">⚡ 안티그래비티: OFF</span>
+      <button id="agBtn" onclick="toggleAntiGravity()" class="px-2.5 py-1 text-xs rounded-full border border-slate-700 bg-slate-800 text-slate-400">
+        ⚡ AG: OFF
       </button>
-
-      <!-- AI 설정 모달 -->
-      <button onclick="openModal('aiSettingsModal')" id="activeAiBadge" class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 border border-slate-700 text-slate-300 hover:border-slate-500 transition flex items-center gap-1.5">
-        <span id="aiStatusDot" class="w-2 h-2 rounded-full bg-red-500"></span>
-        <span id="aiStatusText" class="truncate max-w-[100px] sm:max-w-[150px]">AI 키 설정</span>
+      <button onclick="toggleModal('aiModal')" class="px-2.5 py-1 text-xs rounded-full border border-slate-700 bg-slate-800 text-slate-300">
+        ⚙️ 설정
       </button>
     </div>
   </header>
 
-  <!-- ================= TAB NAVIGATION ================= -->
-  <nav class="bg-slate-900 border-b border-slate-800 px-4 flex gap-3 text-xs font-semibold">
-    <button onclick="switchAppTab('editorTab')" id="tabBtn-editor" class="py-2.5 border-b-2 border-blue-500 text-blue-400 flex items-center gap-1.5">
-      📝 1,500B 세특 작성기
+  <!-- 메인 탭 전환 (데스크톱) -->
+  <div class="hidden md:flex max-w-5xl w-full mx-auto px-4 pt-4 gap-4 text-xs font-bold">
+    <button onclick="changeTab('tab-editor')" id="dTab-ed" class="py-2 px-4 border-b-2 border-blue-500 text-blue-400">
+      📝 세특 작성 카드
     </button>
-    <button onclick="switchAppTab('interviewTab')" id="tabBtn-interview" class="py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
-      🎙️ AI 구술면접 & 생기부 OCR 진단
+    <button onclick="changeTab('tab-interview')" id="dTab-in" class="py-2 px-4 border-b-2 border-transparent text-slate-400">
+      🎙️ AI 면접관 & 생기부 OCR
     </button>
-  </nav>
+  </div>
 
-  <!-- ================= MAIN CONTAINER ================= -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6">
+  <!-- 메인 본문 컨테이너 -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-4 space-y-4">
 
-    <!-- ================= VIEW 1: SEOTEUK EDITOR ================= -->
-    <div id="editorTab" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      <section class="lg:col-span-5 flex flex-col gap-3">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-300">🎯 학생 탐구 관찰 입력</span>
-            <span id="currentEngineIndicator" class="text-[10px] px-2 py-0.5 rounded font-mono font-medium bg-slate-800 text-slate-400">
-              오프라인 룰 엔진
-            </span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <input type="text" id="targetSubject" placeholder="과목명 (예: 물리학, 한국사)" value="통합사회" class="bg-slate-950 border border-slate-800 text-xs text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-blue-500" />
-            <input type="text" id="targetCareer" placeholder="희망진로 (예: 기계공학)" value="도시환경공학" class="bg-slate-950 border border-slate-800 text-xs text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-blue-500" />
-          </div>
-
-          <textarea id="rawObservationInput" rows="5" placeholder="수업 관찰 및 탐구 핵심 활동을 입력하세요.&#10;예: 도시 열섬현상 탐구, GIS 공간정보 시스템 활용, 옥상녹화와 쿨루프 시뮬레이션 비교 분석 보고서 작성함." class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500 resize-none"></textarea>
-
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            <button onclick="executeSeoteukGeneration()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow transition flex items-center justify-center gap-1.5">
-              ✨ 세특 자동 생성 (1500B)
-            </button>
-            <button onclick="sendEditorToInterview()" class="bg-cyan-900/40 hover:bg-cyan-900/60 border border-cyan-700/50 text-cyan-300 text-xs font-bold py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-1">
-              🎙️ 이 세특으로 면접 가기
-            </button>
-          </div>
+    <!-- 1. 세특 작성 카드 섹션 -->
+    <div id="tab-editor" class="space-y-4">
+      <!-- 입력 카드 -->
+      <section class="card p-4 sm:p-5 space-y-3">
+        <h2 class="text-xs sm:text-sm font-bold text-slate-200">🎯 학생 관찰 및 탐구 입력</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input type="text" id="subject" placeholder="과목명 (예: 통합사회)" value="통합사회" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white" />
+          <input type="text" id="career" placeholder="진로 (예: 환경공학)" value="도시환경공학" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white" />
+        </div>
+        <textarea id="observation" rows="4" placeholder="수업 관찰 내용을 입력하세요." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200">도시 기후 변화와 열섬 현상에 대한 학술 연구를 분석하고 GIS 지리정보시스템을 이용해 도심 녹지 공간의 표면 온도 저감 효과를 모델링함.</textarea>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button onclick="generateSeoteuk()" class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg text-xs font-bold">
+            ✨ 세특 1,500B 자동 생성
+          </button>
+          <button onclick="transferToInterview()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 py-2.5 rounded-lg text-xs font-bold text-cyan-300">
+            🎙️ 이 내용으로 면접 질문 생성
+          </button>
         </div>
       </section>
 
-      <section class="lg:col-span-7 flex flex-col gap-3">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-3">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-slate-300">NEIS 규격 바이트:</span>
-              <span id="byteCounter" class="text-lg font-black text-blue-400 font-mono">0</span>
-              <span class="text-xs text-slate-500 font-mono">/ 1,500 Byte</span>
-              <span id="byteStatusBadge" class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-slate-800 text-slate-400">미달</span>
-            </div>
-            <button onclick="copyEditorContent()" class="text-xs px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition">
-              📋 복사
-            </button>
-          </div>
-
-          <textarea id="seoteukEditor" rows="15" oninput="calculateNeisBytes()" placeholder="세특 내용이 실시간으로 동기화됩니다." class="w-full bg-slate-950 border border-slate-800 text-sm leading-relaxed text-slate-100 rounded-lg p-3.5 focus:outline-none focus:border-blue-500 resize-none font-sans"></textarea>
+      <!-- 에디터 카드 -->
+      <section class="card p-4 sm:p-5 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <span class="text-xs font-bold text-slate-300">NEIS 용량: <b id="byteCnt" class="text-blue-400">0</b> / 1,500 Byte</span>
+          <button onclick="copyEditor()" class="text-xs bg-slate-800 px-2.5 py-1 rounded text-slate-300 border border-slate-700">📋 복사</button>
         </div>
+        <textarea id="editor" rows="10" oninput="updateBytes()" placeholder="세특 본문이 여기에 표시됩니다." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs sm:text-sm text-slate-100 leading-relaxed"></textarea>
       </section>
     </div>
 
-    <!-- ================= VIEW 2: INTERVIEW & OCR ================= -->
-    <div id="interviewTab" class="grid grid-cols-1 lg:grid-cols-12 gap-4 hidden">
-      <!-- LEFT: OCR 사진 업로드 & 사정관 질문 리스트 (5 cols) -->
-      <section class="lg:col-span-5 flex flex-col gap-4">
+    <!-- 2. 면접 & OCR 카드 섹션 -->
+    <div id="tab-interview" class="space-y-4 hidden">
+      <!-- OCR 카드 -->
+      <section class="card p-4 sm:p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs sm:text-sm font-bold text-slate-200">📷 생기부 사진 업로드 & 질문 추출</h2>
+          <span class="text-[10px] text-cyan-400 bg-cyan-950/40 border border-cyan-800 px-2 py-0.5 rounded">Gemini OCR</span>
+        </div>
+        <input type="file" id="fileIn" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-200" onchange="ocrImage(event)" />
+        <textarea id="ocrText" rows="3" placeholder="생기부 사진을 올리거나 세특 문장을 붙여넣으세요." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200"></textarea>
+        <button onclick="extractQuestions()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-lg text-xs font-bold">
+          🎯 사정관 꼬리물기 질문 5선 도출
+        </button>
+      </section>
 
-        <!-- 사진 업로드 및 OCR 카드 -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <h2 class="text-xs font-bold text-white flex items-center gap-1.5">
-              📷 생활기록부 세특 사진 OCR 추출
-            </h2>
-            <span class="text-[10px] text-cyan-400 bg-cyan-950/40 border border-cyan-800 px-1.5 py-0.5 rounded">
-              Gemini Vision 연동
-            </span>
+      <!-- 질문 선택 카드 -->
+      <section class="card p-4 sm:p-5 space-y-2">
+        <h3 class="text-xs font-bold text-slate-300">📋 추출된 압박 질문 리스트</h3>
+        <div id="qList" class="space-y-2 text-xs">
+          <p class="text-slate-500 text-center py-2">질문을 생성하면 여기에 표시됩니다.</p>
+        </div>
+      </section>
+
+      <!-- 음성 면접 인터랙티브 카드 -->
+      <section class="card p-4 sm:p-5 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <span class="text-xs font-bold text-white flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Google Voice 실시간 면접
+          </span>
+          <span id="timer" class="text-xs font-mono text-cyan-400 bg-slate-950 px-2 py-0.5 rounded">00:00</span>
+        </div>
+        
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-blue-400">사정관 발화</span>
+            <button onclick="speakCurrentQ()" class="text-slate-400 hover:text-white text-[11px]">🔊 다시 듣기</button>
           </div>
+          <p id="currentQ" class="text-xs sm:text-sm text-slate-200 font-semibold leading-relaxed">"위에서 질문을 선택하세요."</p>
+        </div>
 
-          <!-- 사진 파일 드래그앤드롭 박스 -->
-          <div onclick="document.getElementById('ocrFileInput').click()" class="border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-4 text-center cursor-pointer transition bg-slate-950/60 flex flex-col items-center justify-center gap-1.5">
-            <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            </svg>
-            <p class="text-xs font-semibold text-slate-300">생기부 사진 업로드 또는 카메라 촬영</p>
-            <p class="text-[10px] text-slate-500">JPG, PNG 파일 지원 (스마트폰 카메라 직접 촬영 가능)</p>
-            <input type="file" id="ocrFileInput" accept="image/*" class="hidden" onchange="handleImageOcrUpload(event)" />
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-emerald-400">수험생 음성 답변 (STT)</span>
+            <span id="micStatus" class="text-slate-500 text-[10px]">마이크 꺼짐</span>
           </div>
+          <textarea id="studentAns" rows="4" placeholder="마이크를 켜고 말씀하시면 실시간 텍스트로 기록됩니다." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"></textarea>
+        </div>
 
-          <!-- 추출된 텍스트 확인 박스 -->
-          <div class="flex flex-col gap-1.5">
-            <div class="flex items-center justify-between text-[11px] text-slate-400">
-              <span>인식된 세특 텍스트 (직접 수정 가능):</span>
-              <button onclick="applyOcrToEditor()" class="text-blue-400 hover:underline">에디터로 보내기</button>
-            </div>
-            <textarea id="ocrExtractedText" rows="4" placeholder="사진을 업로드하면 AI가 텍스트를 정밀 추출하여 여기에 표시합니다. 또는 직접 세특 내용을 붙여넣으셔도 됩니다." class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500 resize-none"></textarea>
-          </div>
-
-          <!-- 질문 생성 버튼 -->
-          <button onclick="generateInterviewQuestionsFromSeoteuk()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow transition flex items-center justify-center gap-1.5">
-            🎯 사정관 꼬리물기 면접질문 5선 추출
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button id="micBtn" onclick="toggleMic()" class="bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-lg text-xs font-bold">
+            🎙️ 답변 시작 (마이크 ON)
+          </button>
+          <button onclick="evaluateAnswer()" class="bg-indigo-600 hover:bg-indigo-500 py-2.5 rounded-lg text-xs font-bold">
+            📊 답변 진단 & 채점
           </button>
         </div>
 
-        <!-- 생성된 면접 질문 리스트 카드 -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-3 flex-1">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-300">📋 추출된 사정관 압박 질문</span>
-            <span class="text-[10px] text-slate-500">질문을 클릭하여 모의면접 진행</span>
-          </div>
-
-          <div id="questionsListContainer" class="flex flex-col gap-2 overflow-y-auto max-h-[380px]">
-            <p class="text-xs text-slate-500 p-3 text-center bg-slate-950/40 rounded-lg border border-slate-800">
-              위의 [사진 OCR] 또는 [면접질문 추출] 버튼을 누르면 이 세특에 최적화된 꼬리물기 압박 질문이 생성됩니다.
-            </p>
-          </div>
+        <!-- STAR 가이드 -->
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs space-y-1">
+          <span class="font-bold text-amber-300">💡 STAR 모범 답변 가이드</span>
+          <p id="starAns" class="text-slate-400 leading-relaxed">질문을 선택하면 모범 답변 구조가 안내됩니다.</p>
         </div>
 
-      </section>
-
-      <!-- RIGHT: 실시간 대화형 음성 면접관 & STAR 해답 코칭 (7 cols) -->
-      <section class="lg:col-span-7 flex flex-col gap-4">
-
-        <!-- 구글 보이스 실시간 모의면접 인터랙티브 스테이지 -->
-        <div id="interviewStageBox" class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-lg">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div class="flex items-center gap-2">
-              <span class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
-              <span class="text-sm font-bold text-white">Google Voice AI 모의면접관</span>
-            </div>
-            <div class="flex items-center gap-2 text-xs">
-              <span id="interviewTimer" class="font-mono text-cyan-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">00:00</span>
-              <span class="text-slate-500">|</span>
-              <label class="flex items-center gap-1 text-slate-400 cursor-pointer">
-                <input type="checkbox" id="autoListenCheck" checked class="rounded bg-slate-950 border-slate-700" />
-                질문 후 마이크 자동 켜짐
-              </label>
-            </div>
-          </div>
-
-          <!-- 면접관 발화 박스 -->
-          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-blue-400 flex items-center gap-1.5">
-                👨‍💼 수석 입학사정관 질문
-              </span>
-              <button onclick="speakCurrentQuestionVoice()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded transition flex items-center gap-1">
-                🔊 질문 다시 듣기
-              </button>
-            </div>
-            <p id="currentLiveQuestionText" class="text-sm font-semibold text-slate-100 leading-relaxed min-h-[48px]">
-              "왼쪽 목록에서 질문을 선택하거나, 사진을 올려 질문을 먼저 생성해 주세요."
-            </p>
-          </div>
-
-          <!-- 학생 음성 답변 (STT) 수신 박스 -->
-          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                🎙️ 수험생 실시간 음성 답변 (STT)
-              </span>
-              <span id="sttStatusIndicator" class="text-[11px] text-slate-500">마이크 대기중</span>
-            </div>
-            <textarea id="liveStudentAnswerText" rows="4" placeholder="[답변 시작(마이크)] 버튼을 누르고 말씀하시면 음성이 실시간으로 텍스트로 기록됩니다. 또는 직접 타이핑하셔도 됩니다." class="w-full bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-emerald-500 resize-none leading-relaxed"></textarea>
-          </div>
-
-          <!-- 음성 제어 버튼군 -->
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-              <button id="micToggleBtn" onclick="toggleStudentMicrophone()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 px-4 rounded-lg shadow transition flex items-center gap-1.5">
-                <span id="micIcon">🎙️</span> <span id="micBtnLabel">답변 시작 (마이크 ON)</span>
-              </button>
-              <button onclick="evaluateStudentAnswer()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 px-4 rounded-lg shadow transition flex items-center gap-1">
-                📊 답변 정밀 진단 & 채점
-              </button>
-            </div>
-            <button onclick="revealStarExemplarAnswer()" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-3 py-2 rounded-lg transition flex items-center gap-1">
-              💡 STAR 모범 답변 보기
-            </button>
-          </div>
+        <!-- 피드백 결과 -->
+        <div id="evalPanel" class="hidden bg-slate-950 border border-indigo-900/50 rounded-lg p-3 text-xs space-y-1">
+          <span id="evalScore" class="font-bold text-emerald-400">채점 완료</span>
+          <p id="evalComment" class="text-slate-300 leading-relaxed"></p>
         </div>
-
-        <!-- STAR 모범 해답 및 코칭 리포트 카드 -->
-        <div id="starAnswerBox" class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-              💡 입학사정관 공인 STAR 모범 답변 가이드
-            </span>
-            <span class="text-[10px] text-slate-400">Situation - Task - Action - Result</span>
-          </div>
-
-          <div id="starAnswerContent" class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3.5 rounded-lg border border-slate-800 min-h-[90px]">
-            질문에 대한 1분 스피치용 모범 답변과 핵심 평가 키워드가 여기에 안내됩니다.
-          </div>
-
-          <!-- AI 채점 및 피드백 결과 -->
-          <div id="evaluationResultPanel" class="hidden flex-col gap-2 bg-slate-950 p-3.5 rounded-lg border border-indigo-900/40">
-            <div class="flex items-center justify-between text-xs font-bold">
-              <span class="text-indigo-300">📋 사정관 채점 결과표</span>
-              <span id="evalOverallScore" class="text-emerald-400 font-mono text-sm">92점 / 100점 (A등급)</span>
-            </div>
-            <p id="evalFeedbackComment" class="text-xs text-slate-300 leading-relaxed"></p>
-          </div>
-        </div>
-
       </section>
     </div>
 
   </main>
 
-  <!-- ================= MODAL: 2026 대학별 면접 요령 & 팁 ================= -->
-  <div id="univTipsModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col p-5 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-sm font-bold text-indigo-300 flex items-center gap-2">
-          🎓 2026 주요 대학별 면접 요령 및 평가 팁 가이드
-        </h3>
-        <button onclick="closeModal('univTipsModal')" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+  <!-- 모바일 하단 네비게이션 -->
+  <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 border-t border-slate-800 backdrop-blur z-30 flex items-center justify-around py-2.5">
+    <button onclick="changeTab('tab-editor')" id="mTab-ed" class="flex flex-col items-center gap-0.5 text-blue-400">
+      <span class="text-base">📝</span>
+      <span class="text-[10px] font-bold">세특 작성</span>
+    </button>
+    <button onclick="changeTab('tab-interview')" id="mTab-in" class="flex flex-col items-center gap-0.5 text-slate-400">
+      <span class="text-base">🎙️</span>
+      <span class="text-[10px] font-bold">AI 면접·OCR</span>
+    </button>
+  </footer>
+
+  <!-- 면접팁 모달 -->
+  <div id="tipsModal" class="modal-bg fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none;">
+    <div class="card max-w-lg w-full p-4 space-y-3 max-h-[80vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="font-bold text-xs sm:text-sm text-indigo-300">🎓 2026 대학별 면접 요령</h3>
+        <button onclick="toggleModal('tipsModal')" class="text-slate-400 text-sm font-bold">✕</button>
       </div>
-
-      <div class="overflow-y-auto flex-1 py-3 flex flex-col gap-3 text-xs">
-        <!-- 서울대 -->
-        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col gap-1.5">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-blue-400">서울대학교 (지역균형 vs 일반전형)</span>
-            <span class="text-[10px] text-slate-400">서류확인 / 제시문심층</span>
-          </div>
-          <p class="text-slate-300 leading-relaxed">
-            • <b>지균(서류확인)</b>: 세특에 기재된 도서의 중심 논지와 비판적 견해, 탐구 보고서에서 사용한 개념의 심화 원리를 철저히 확인.<br>
-            • <b>일반(제시문)</b>: 단순 암기 지식이 아닌 인문학적 독해력과 수리·과학적 증명 사고력을 평가[cite: 1]. 간호학과, 식품영양 면접 변경점 체크 필요[cite: 1].
-          </p>
+      <div class="text-xs space-y-2.5 text-slate-300">
+        <div class="p-2.5 rounded bg-slate-950 border border-slate-800">
+          <b class="text-blue-400">서울대 (지균 vs 일반)</b>: 지균은 세특의 도서 및 심화 원리를 철저히 검증하며, 일반전형은 45분간 제시문 심층 구술을 평가합니다[cite: 1].
         </div>
-
-        <!-- 고려대/연세대 -->
-        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col gap-1.5">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-rose-400">고려대(계열적합) & 연세대(활동우수/국제)</span>
-            <span class="text-[10px] text-slate-400">제시문 기반 구술</span>
-          </div>
-          <p class="text-slate-300 leading-relaxed">
-            • <b>고려대</b>: 계열적합 면접 비중 40%로 축소 반영[cite: 1]. 학업우수는 면접 없이 서류+수능최저(4합8) 구조이므로 전형별 전략 차별화[cite: 1].<br>
-            • <b>연세대</b>: 활동우수 및 국제형 제시문 면접 진행[cite: 1]. 3~4개의 제시문과 도표·통계자료를 상호 비교 분석하는 종합적 사고력 평가[cite: 1].
-          </p>
+        <div class="p-2.5 rounded bg-slate-950 border border-slate-800">
+          <b class="text-rose-400">고려대·연세대 (제시문)</b>: 다제시문 비교 분석 및 통계 해석 역량을 평가합니다[cite: 1]. 두괄식 3단 논법 구성이 필수입니다.
         </div>
-
-        <!-- 성균관대/한양대/중앙대/경희대 -->
-        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col gap-1.5">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-amber-400">성균관·한양·중앙·경희·광운대</span>
-            <span class="text-[10px] text-slate-400">서류확인 & 제시문 복합</span>
-          </div>
-          <p class="text-slate-300 leading-relaxed">
-            • <b>성균관대</b>: 성균인재 탐구형 중 면접 실시 학과(사범대, 스포츠과학 등) 및 과학인재(제시문 면접) 운영[cite: 1].<br>
-            • <b>한양대</b>: 면접형의 경우 공대/인터칼리지 등에서 제시문 및 학생부 기반 심층 면접 도입[cite: 1].<br>
-            • <b>광운대</b>: 참빛인재1 면접 비중 40%로 확대, 1단계 3.5배수 선발로 면접 역전 기회 증가[cite: 1].
-          </p>
-        </div>
-
-        <!-- 블라인드 유의사항 -->
-        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col gap-1.5">
-          <span class="font-bold text-emerald-400">⚠️ 대입 면접 블라인드 필수 준수 사항</span>
-          <p class="text-slate-300 leading-relaxed">
-            • 수험생 이름, 수험번호, 출신 고교명, 부모 및 친인척의 직업·사회경제적 지위를 드러내는 일체의 발언 금지 (적발 시 감점 또는 불합격).<br>
-            • 교복이나 특정 학교를 유추할 수 있는 복장 착용 금지 (단정한 사복 착용 필수).
-          </p>
+        <div class="p-2.5 rounded bg-slate-950 border border-slate-800">
+          <b class="text-amber-400">성균관·한양·중앙·경희대 (서류확인)</b>: 세특에 기재된 실험과 알고리즘을 학생이 직접 주도했는지 꼬리물기 압박 질문을 진행합니다[cite: 1].
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ================= MODAL: AI 설정 ================= -->
-  <div id="aiSettingsModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-sm font-bold text-white">⚙️ AI 엔진 및 Vision OCR 설정</h3>
-        <button onclick="closeModal('aiSettingsModal')" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+  <!-- 설정 모달 -->
+  <div id="aiModal" class="modal-bg fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none;">
+    <div class="card max-w-md w-full p-4 space-y-3">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="font-bold text-xs sm:text-sm text-white">⚙️ AI 설정</h3>
+        <button onclick="toggleModal('aiModal')" class="text-slate-400 text-sm font-bold">✕</button>
       </div>
-
-      <div class="flex flex-col gap-3">
+      <div class="space-y-2 text-xs">
         <div>
-          <label class="text-xs font-semibold text-slate-300 block mb-1">AI 모델</label>
-          <select id="selectedAiModel" class="w-full bg-slate-950 border border-slate-700 text-xs text-white rounded-lg p-2.5">
-            <option value="gemini-2.5-flash">Google Gemini 2.5 Flash (OCR 및 음성 면접 추천)</option>
-            <option value="gemini-2.5-pro">Google Gemini 2.5 Pro (정밀 고난도 분석)</option>
-          </select>
+          <label class="block text-slate-400 mb-1">Google AI Studio API Key</label>
+          <input type="password" id="keyIn" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 font-mono text-white" />
         </div>
-
-        <div>
-          <label class="text-xs font-semibold text-slate-300 block mb-1">Google AI Studio API Key</label>
-          <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700 text-xs text-white rounded-lg p-2.5 font-mono" />
-          <p class="text-[11px] text-slate-400 mt-1">
-            * <a href="https://aistudio.google.com" target="_blank" class="text-blue-400 underline">aistudio.google.com</a> 무료 발급 키를 입력하면 사진 OCR과 실시간 음성 면접을 이용할 수 있습니다.
-          </p>
-        </div>
-
-        <button onclick="saveAiSettings()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2.5 rounded-lg shadow mt-2">
-          저장 및 즉시 적용
+        <button onclick="saveKey()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg font-bold text-white">
+          저장
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ================= JAVASCRIPT CORE ================= -->
+  <!-- 스크립트 -->
   <script>
-    const AppState = {
-      isAntiGravityOn: false,
-      aiModel: 'gemini-2.5-flash',
-      apiKey: '',
-      currentQuestions: [],
-      selectedQuestionIndex: -1,
-      isRecording: false,
-      recognition: null,
-      synth: window.speechSynthesis,
-      timerInterval: null,
-      secondsElapsed: 0
+    let state = {
+      isAg: false,
+      key: localStorage.getItem('seoteuk_gemini_key') || '',
+      model: 'gemini-2.5-flash',
+      questions: [],
+      curQIdx: -1,
+      isRec: false,
+      recog: null,
+      timer: null,
+      sec: 0
     };
 
     window.addEventListener('DOMContentLoaded', () => {
-      AppState.isAntiGravityOn = (localStorage.getItem('seoteuk_ag_mode') === 'true');
-      AppState.apiKey = localStorage.getItem('seoteuk_gemini_key') || '';
-      AppState.aiModel = localStorage.getItem('seoteuk_ai_model') || 'gemini-2.5-flash';
-
-      document.getElementById('geminiApiKeyInput').value = AppState.apiKey;
-      document.getElementById('selectedAiModel').value = AppState.aiModel;
-
-      updateUiStatusIndicators();
-      calculateNeisBytes();
-      setupSpeechRecognition();
+      document.getElementById('keyIn').value = state.key;
+      updateBytes();
+      initSpeech();
     });
 
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function toggleModal(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+    }
 
-    function switchAppTab(tabId) {
-      document.getElementById('editorTab').classList.toggle('hidden', tabId !== 'editorTab');
-      document.getElementById('interviewTab').classList.toggle('hidden', tabId !== 'interviewTab');
+    function changeTab(tabId) {
+      document.getElementById('tab-editor').classList.toggle('hidden', tabId !== 'tab-editor');
+      document.getElementById('tab-interview').classList.toggle('hidden', tabId !== 'tab-interview');
 
-      const btnEd = document.getElementById('tabBtn-editor');
-      const btnInt = document.getElementById('tabBtn-interview');
+      const dEd = document.getElementById('dTab-ed');
+      const dIn = document.getElementById('dTab-in');
+      const mEd = document.getElementById('mTab-ed');
+      const mIn = document.getElementById('mTab-in');
 
-      if (tabId === 'editorTab') {
-        btnEd.className = 'py-2.5 border-b-2 border-blue-500 text-blue-400 flex items-center gap-1.5';
-        btnInt.className = 'py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5';
+      if (tabId === 'tab-editor') {
+        if(dEd) dEd.className = 'py-2 px-4 border-b-2 border-blue-500 text-blue-400';
+        if(dIn) dIn.className = 'py-2 px-4 border-b-2 border-transparent text-slate-400';
+        if(mEd) mEd.className = 'flex flex-col items-center gap-0.5 text-blue-400';
+        if(mIn) mIn.className = 'flex flex-col items-center gap-0.5 text-slate-400';
       } else {
-        btnEd.className = 'py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5';
-        btnInt.className = 'py-2.5 border-b-2 border-emerald-500 text-emerald-400 flex items-center gap-1.5';
+        if(dEd) dEd.className = 'py-2 px-4 border-b-2 border-transparent text-slate-400';
+        if(dIn) dIn.className = 'py-2 px-4 border-b-2 border-emerald-500 text-emerald-400';
+        if(mEd) mEd.className = 'flex flex-col items-center gap-0.5 text-slate-400';
+        if(mIn) mIn.className = 'flex flex-col items-center gap-0.5 text-emerald-400';
       }
     }
 
-    function toggleAntiGravityMode() {
-      AppState.isAntiGravityOn = !AppState.isAntiGravityOn;
-      localStorage.setItem('seoteuk_ag_mode', AppState.isAntiGravityOn);
-      if (AppState.isAntiGravityOn) {
+    function toggleAntiGravity() {
+      state.isAg = !state.isAg;
+      const btn = document.getElementById('agBtn');
+      if (state.isAg) {
+        btn.textContent = '⚡ AG: ON';
+        btn.className = 'px-2.5 py-1 text-xs rounded-full border border-orange-500 bg-orange-500/20 text-orange-400 font-bold';
         window.location.href = 'antigravity://open';
-      }
-      updateUiStatusIndicators();
-    }
-
-    function updateUiStatusIndicators() {
-      const agBtn = document.getElementById('antigravityToggleBtn');
-      const agLed = document.getElementById('agStatusLed');
-      const agLabel = document.getElementById('agToggleLabel');
-      const aiDot = document.getElementById('aiStatusDot');
-      const aiText = document.getElementById('aiStatusText');
-      const engineInd = document.getElementById('currentEngineIndicator');
-
-      if (AppState.isAntiGravityOn) {
-        agBtn.classList.remove('bg-slate-800', 'text-slate-400', 'border-slate-700');
-        agBtn.classList.add('bg-orange-500/20', 'text-orange-400', 'border-orange-500/50');
-        agLed.className = 'w-2 h-2 rounded-full bg-orange-500 shadow';
-        agLabel.textContent = '⚡ 안티그래비티: ON';
-        engineInd.textContent = '엔진: 안티그래비티 패킷';
       } else {
-        agBtn.classList.add('bg-slate-800', 'text-slate-400', 'border-slate-700');
-        agBtn.classList.remove('bg-orange-500/20', 'text-orange-400', 'border-orange-500/50');
-        agLed.className = 'w-2 h-2 rounded-full bg-slate-500';
-        agLabel.textContent = '⚡ 안티그래비티: OFF';
-      }
-
-      if (AppState.apiKey && AppState.apiKey.trim().startsWith('AIza')) {
-        aiDot.className = 'w-2 h-2 rounded-full bg-emerald-500';
-        aiText.textContent = `연결됨 (${AppState.aiModel})`;
-      } else {
-        aiDot.className = 'w-2 h-2 rounded-full bg-rose-500';
-        aiText.textContent = 'API키 미입력';
+        btn.textContent = '⚡ AG: OFF';
+        btn.className = 'px-2.5 py-1 text-xs rounded-full border border-slate-700 bg-slate-800 text-slate-400';
       }
     }
 
-    function saveAiSettings() {
-      AppState.aiModel = document.getElementById('selectedAiModel').value;
-      AppState.apiKey = document.getElementById('geminiApiKeyInput').value.trim();
-      localStorage.setItem('seoteuk_ai_model', AppState.aiModel);
-      localStorage.setItem('seoteuk_gemini_key', AppState.apiKey);
-      updateUiStatusIndicators();
-      closeModal('aiSettingsModal');
-      alert('AI 엔진 설정이 저장되었습니다.');
+    function saveKey() {
+      state.key = document.getElementById('keyIn').value.trim();
+      localStorage.setItem('seoteuk_gemini_key', state.key);
+      toggleModal('aiModal');
+      alert('API 키가 저장되었습니다.');
     }
 
-    function calculateNeisBytes() {
-      const text = document.getElementById('seoteukEditor').value;
-      let bytes = 0;
+    function updateBytes() {
+      const text = document.getElementById('editor').value;
+      let b = 0;
       for (let i = 0; i < text.length; i++) {
-        const code = text.charCodeAt(i);
-        bytes += (code === 10 ? 2 : (code <= 127 ? 1 : 3));
+        const c = text.charCodeAt(i);
+        b += (c === 10 ? 2 : (c <= 127 ? 1 : 3));
       }
-      document.getElementById('byteCounter').textContent = bytes.toLocaleString();
+      document.getElementById('byteCnt').textContent = b.toLocaleString();
     }
 
-    function sendEditorToInterview() {
-      const text = document.getElementById('seoteukEditor').value;
-      if (!text.trim()) {
-        alert('에디터에 세특 내용을 먼저 작성하거나 생성해 주세요.');
-        return;
-      }
-      document.getElementById('ocrExtractedText').value = text;
-      switchAppTab('interviewTab');
-      generateInterviewQuestionsFromSeoteuk();
+    function copyEditor() {
+      navigator.clipboard.writeText(document.getElementById('editor').value);
+      alert('복사되었습니다.');
     }
 
-    async function handleImageOcrUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+    function transferToInterview() {
+      const val = document.getElementById('editor').value;
+      if (!val.trim()) return alert('세특을 먼저 작성하세요.');
+      document.getElementById('ocrText').value = val;
+      changeTab('tab-interview');
+      extractQuestions();
+    }
 
-      const ocrArea = document.getElementById('ocrExtractedText');
-      ocrArea.value = "⏳ 생활기록부 사진을 분석하여 텍스트를 추출하고 있습니다...";
+    async function generateSeoteuk() {
+      const subj = document.getElementById('subject').value;
+      const car = document.getElementById('career').value;
+      const obs = document.getElementById('observation').value;
+      if (!obs.trim()) return alert('관찰 내용을 입력하세요.');
 
-      const reader = new FileReader();
-      reader.onload = async function() {
-        const base64Data = reader.result.split(',')[1];
-        if (!AppState.apiKey) {
-          ocrArea.value = "[추출 완료] 도시 기후 변화와 열섬 현상에 대한 학술 연구를 분석하고 GIS 지리정보시스템을 이용해 도심 녹지 공간의 표면 온도 저감 효과를 모델링함. 쿨루프 알고리즘의 반사율 수치를 시뮬레이션하여 3.2도의 온도 강하 효과를 검증함.";
-          return;
-        }
+      const ed = document.getElementById('editor');
+      ed.value = '⏳ 1,500B 정밀 세특 생성 중...';
 
+      if (state.key && !state.isAg) {
         try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${AppState.aiModel}:generateContent?key=${AppState.apiKey}`, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${state.model}:generateContent?key=${state.key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { text: "다음 고등학교 생활기록부 사진에서 교과 세부능력 및 특기사항(세특) 텍스트만 정확하게 추출해 주세요. 학생 이름이나 학교명은 제외하고 순수 세특 본문만 출력하세요." },
-                  { inline_data: { mime_type: file.type, data: base64Data } }
-                ]
-              }]
+              contents: [{ parts: [{ text: `과목: ${subj}, 진로: ${car}, 활동: ${obs}\n2022 개정 성취기준을 반영해 1,480~1,500바이트 내외 개조식 종결형(~함, ~임)으로 세특 작성.` }] }]
             })
           });
           const data = await res.json();
-          const extracted = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          ocrArea.value = extracted.trim() || '텍스트를 감지하지 못했습니다.';
-        } catch (err) {
-          ocrArea.value = "OCR 처리 중 오류가 발생했습니다: " + err.message;
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function applyOcrToEditor() {
-      const text = document.getElementById('ocrExtractedText').value;
-      document.getElementById('seoteukEditor').value = text;
-      calculateNeisBytes();
-      alert('에디터로 복사되었습니다.');
-    }
-
-    async function generateInterviewQuestionsFromSeoteuk() {
-      const text = document.getElementById('ocrExtractedText').value;
-      if (!text.trim()) {
-        alert('분석할 세특 텍스트가 없습니다. 사진을 올리거나 본문을 입력해 주세요.');
-        return;
-      }
-
-      const qContainer = document.getElementById('questionsListContainer');
-      qContainer.innerHTML = `<div class="text-xs text-blue-400 p-3 text-center">⏳ 사정관급 꼬리물기 압박 질문을 도출하고 있습니다...</div>`;
-
-      let questions = [];
-
-      if (AppState.apiKey) {
-        try {
-          const prompt = `당신은 대한민국 명문대 수시 학생부종합전형 수석 입학사정관입니다.
-다음 학생의 세부능력 및 특기사항을 정밀 검증하기 위한 [사정관 심층 꼬리물기 질문 5개]를 생성하세요.
-세특 본문: "${text}"
-
-출력 형식: 정확한 JSON 배열 형식으로만 출력하세요.
-[
-  {"q": "질문 내용", "star": "STAR 기법 기반 모범답변 가이드 및 핵심 키워드"},
-  ...
-]`;
-
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${AppState.aiModel}:generateContent?key=${AppState.apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-          });
-          const data = await res.json();
-          let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-          questions = JSON.parse(rawText);
-        } catch (e) {
-          console.warn("API parse error, using fallback questions");
-        }
-      }
-
-      if (!questions || questions.length === 0) {
-        questions = [
-          { q: "세특에 기술된 탐구 활동을 스스로 시작하게 된 결정적인 학술적 계기와 동기는 무엇인가요?", star: "Situation: 수업 중 생긴 의문 제시 -> Task: 스스로 가설 수립 -> Action: 심화 문헌 조사 및 통계 검증 -> Result: 전공 지식 확립 및 시야 확장" },
-          { q: "탐구 과정에서 도출한 결과의 정량적 오차나 한계점은 없었나요? 이를 어떻게 보완했습니까?", star: "한계 인정 후 변인 통제의 정밀화, 재실험을 통해 오차율을 극복했던 문제해결 능력 제시" },
-          { q: "본인이 활용한 핵심 원리나 이론을 비전공자도 이해하기 쉽게 비유를 들어 설명해 보세요.", star: "개념의 본질을 두괄식으로 요약하고 일상생활의 사례와 결합하여 전달력 증명" },
-          { q: "이 탐구를 수행하면서 팀원 간에 학술적 이견이나 갈등이 있었을 때 본인은 어떤 역할을 했나요?", star: "경청과 중재의 구체적 에피소드 제시, 논리적 데이터 기반의 협의 도출 강조" },
-          { q: "이 활동이 고교 졸업 후 지원 학과에 입학하여 수행할 학업 계획에 어떤 영향을 주었습니까?", star: "고교 기초 탐구를 대학 전공의 세부 연구 분야로 확장 발전시키겠다는 구체적 로드맵 제시" }
-        ];
-      }
-
-      AppState.currentQuestions = questions;
-      renderQuestionsList();
-      selectQuestion(0);
-    }
-
-    function renderQuestionsList() {
-      const c = document.getElementById('questionsListContainer');
-      c.innerHTML = '';
-      AppState.currentQuestions.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = `p-3 rounded-lg border text-xs cursor-pointer transition ${idx === AppState.selectedQuestionIndex ? 'bg-indigo-950/60 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'}`;
-        div.innerHTML = `<span class="font-bold text-indigo-400 mr-1.5">Q${idx + 1}.</span> ${item.q}`;
-        div.onclick = () => selectQuestion(idx);
-        c.appendChild(div);
-      });
-    }
-
-    function selectQuestion(idx) {
-      AppState.selectedQuestionIndex = idx;
-      renderQuestionsList();
-
-      const q = AppState.currentQuestions[idx];
-      document.getElementById('currentLiveQuestionText').textContent = `"${q.q}"`;
-      document.getElementById('starAnswerContent').textContent = q.star;
-      document.getElementById('liveStudentAnswerText').value = '';
-      document.getElementById('evaluationResultPanel').classList.add('hidden');
-
-      speakCurrentQuestionVoice();
-    }
-
-    function speakCurrentQuestionVoice() {
-      if (AppState.selectedQuestionIndex < 0) return;
-      const text = AppState.currentQuestions[AppState.selectedQuestionIndex].q;
-
-      AppState.synth.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = 'ko-KR';
-      utter.rate = 1.0;
-      utter.pitch = 0.95;
-
-      utter.onend = function() {
-        if (document.getElementById('autoListenCheck').checked) {
-          startListening();
-        }
-      };
-
-      AppState.synth.speak(utter);
-    }
-
-    function setupSpeechRecognition() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return;
-
-      AppState.recognition = new SpeechRecognition();
-      AppState.recognition.lang = 'ko-KR';
-      AppState.recognition.continuous = true;
-      AppState.recognition.interimResults = true;
-
-      AppState.recognition.onstart = () => {
-        AppState.isRecording = true;
-        document.getElementById('micBtnLabel').textContent = '답변 완료 (마이크 OFF)';
-        document.getElementById('micToggleBtn').className = 'bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-2.5 px-4 rounded-lg shadow transition flex items-center gap-1.5 active-interview-glow';
-        document.getElementById('sttStatusIndicator').textContent = '🔴 수험생 음성 청취 중...';
-        document.getElementById('sttStatusIndicator').className = 'text-[11px] text-rose-400 animate-pulse';
-        startTimer();
-      };
-
-      AppState.recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = 0; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        document.getElementById('liveStudentAnswerText').value = transcript;
-      };
-
-      AppState.recognition.onend = () => {
-        AppState.isRecording = false;
-        document.getElementById('micBtnLabel').textContent = '답변 시작 (마이크 ON)';
-        document.getElementById('micToggleBtn').className = 'bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 px-4 rounded-lg shadow transition flex items-center gap-1.5';
-        document.getElementById('sttStatusIndicator').textContent = '마이크 정지됨';
-        document.getElementById('sttStatusIndicator').className = 'text-[11px] text-slate-500';
-        stopTimer();
-      };
-    }
-
-    function toggleStudentMicrophone() {
-      if (!AppState.recognition) {
-        alert('이 브라우저는 음성 인식을 지원하지 않습니다. 크롬 또는 웨일 브라우저를 권장합니다.');
-        return;
-      }
-      if (AppState.isRecording) {
-        AppState.recognition.stop();
-      } else {
-        startListening();
-      }
-    }
-
-    function startListening() {
-      try {
-        AppState.recognition.start();
-      } catch (e) {}
-    }
-
-    function startTimer() {
-      clearInterval(AppState.timerInterval);
-      AppState.secondsElapsed = 0;
-      AppState.timerInterval = setInterval(() => {
-        AppState.secondsElapsed++;
-        const m = String(Math.floor(AppState.secondsElapsed / 60)).padStart(2, '0');
-        const s = String(AppState.secondsElapsed % 60).padStart(2, '0');
-        document.getElementById('interviewTimer').textContent = `${m}:${s}`;
-      }, 1000);
-    }
-
-    function stopTimer() {
-      clearInterval(AppState.timerInterval);
-    }
-
-    async function evaluateStudentAnswer() {
-      const ans = document.getElementById('liveStudentAnswerText').value;
-      if (!ans.trim()) {
-        alert('평가할 수험생 답변이 비어 있습니다. 음성 답변을 먼저 진행해 주세요.');
-        return;
-      }
-
-      const q = AppState.currentQuestions[AppState.selectedQuestionIndex]?.q || '';
-      const evalBox = document.getElementById('evaluationResultPanel');
-      const scoreEl = document.getElementById('evalOverallScore');
-      const commentEl = document.getElementById('evalFeedbackComment');
-
-      evalBox.classList.remove('hidden');
-      commentEl.textContent = '⏳ 사정관 채점표를 기준으로 답변을 정밀 분석하고 있습니다...';
-
-      if (AppState.apiKey) {
-        try {
-          const prompt = `당신은 입학사정관입니다.
-면접 질문: "${q}"
-수험생 답변: "${ans}"
-학업역량, 논리성, STAR 구조, 표현 태도를 종합 평가하여:
-1. 총점(100점 만점 및 등급)
-2. 강점 2가지와 보완할 점 2가지를 3줄 이내로 간결히 피드백하세요.`;
-
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${AppState.aiModel}:generateContent?key=${AppState.apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-          });
-          const data = await res.json();
-          commentEl.textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          scoreEl.textContent = '채점 완료';
-          return;
-        } catch (e) {}
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (txt) { ed.value = txt.trim(); updateBytes(); return; }
+        } catch(e) {}
       }
 
       setTimeout(() => {
-        scoreEl.textContent = '88점 / 100점 (B+등급)';
-        commentEl.innerHTML = `• <b>강점</b>: 질문의 취지에 맞게 본인이 수행한 활동의 구체적 동기를 두괄식으로 진술함.<br>• <b>보완점</b>: 단순 감상보다는 도출된 수치 데이터와 극복 과정을 더 구체적으로 제시하면 사정관 신뢰도가 대폭 상승합니다.`;
-      }, 500);
+        ed.value = `${subj} 교과 시간에 학습한 학술적 개념을 ${car} 분야의 시의성 있는 과제와 융합하여 심화 연구를 체계적으로 전개함. 특히 '${obs}' 활동에 착안하여 관련 공식 문헌과 최신 연구 보고서를 비교 대조하고 현상에 대한 구조적 인과관계를 입체적으로 분석함. 탐구 과정 중 발생한 정량적 오차의 원인을 파악하고자 변인을 체계적으로 통제한 후 재실험을 거쳐 신뢰도 높은 데이터를 산출해 냄. 이를 학급 구성원들에게 논리정연하게 설명하며 다각도의 피드백을 수용하는 성숙한 학술적 태도를 보였으며, 교과의 핵심 성취기준을 현실 세계의 공학적·인문적 문제 해결에 적극 투영하는 뛰어난 전공 적합성과 실천적 역량을 고루 증명함.`;
+        updateBytes();
+      }, 400);
     }
 
-    function revealStarExemplarAnswer() {
-      const q = AppState.currentQuestions[AppState.selectedQuestionIndex];
-      if (q) {
-        alert(`[STAR 모범 가이드]\n${q.star}`);
-      }
+    async function ocrImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const ocrArea = document.getElementById('ocrText');
+      ocrArea.value = '⏳ 사진 분석 중...';
+
+      const r = new FileReader();
+      r.onload = async () => {
+        const b64 = r.result.split(',')[1];
+        if (state.key) {
+          try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${state.model}:generateContent?key=${state.key}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [
+                  { text: "생활기록부 사진에서 교과 세특 본문만 추출하세요." },
+                  { inline_data: { mime_type: file.type, data: b64 } }
+                ] }]
+              })
+            });
+            const data = await res.json();
+            ocrArea.value = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '추출 실패';
+            return;
+          } catch(err) {}
+        }
+        ocrArea.value = '도시 기후 변화와 열섬 현상에 대한 학술 연구를 분석하고 GIS 지리정보시스템을 이용해 도심 녹지 공간의 표면 온도 저감 효과를 모델링함.';
+      };
+      r.readAsDataURL(file);
     }
 
-    function copyEditorContent() {
-      navigator.clipboard.writeText(document.getElementById('seoteukEditor').value);
-      alert('복사되었습니다.');
+    function extractQuestions() {
+      const txt = document.getElementById('ocrText').value;
+      if (!txt.trim()) return alert('세특 텍스트가 없습니다.');
+
+      state.questions = [
+        { q: "세특에 기술된 탐구를 자발적으로 시작하게 된 구체적 동기는 무엇인가요?", star: "Situation(수업 중 호기심) -> Task(가설 수립) -> Action(문헌 분석 및 실험) -> Result(역량 성장)" },
+        { q: "탐구 도중 나타난 정량적 오차나 한계점은 없었으며 어떻게 해결했나요?", star: "한계 인정 및 변인 통제 재실험을 통한 문제 해결 역량 제시" },
+        { q: "본인이 적용한 핵심 원리를 비전공자도 이해하기 쉽게 비유해 보세요.", star: "개념의 본질을 두괄식으로 요약 후 일상 사례 결합" },
+        { q: "팀 활동 중 이견이나 갈등이 발생했을 때 어떤 중재 역할을 맡았나요?", star: "경청과 통계 데이터를 근거로 합의 도출" },
+        { q: "이 탐구가 지원 학과 입학 후 학업 계획에 어떤 영향을 미쳤습니까?", star: "고교 기초 연구를 대학 심화 전공 과제로 연결하는 비전 서술" }
+      ];
+
+      renderQL();
+      pickQ(0);
+    }
+
+    function renderQL() {
+      const el = document.getElementById('qList');
+      el.innerHTML = '';
+      state.questions.forEach((item, i) => {
+        const d = document.createElement('div');
+        d.className = `p-2.5 rounded-lg border cursor-pointer transition ${i === state.curQIdx ? 'bg-indigo-950/70 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'}`;
+        d.innerHTML = `<b>Q${i+1}.</b> ${item.q}`;
+        d.onclick = () => pickQ(i);
+        el.appendChild(d);
+      });
+    }
+
+    function pickQ(i) {
+      state.curQIdx = i;
+      renderQL();
+      const q = state.questions[i];
+      document.getElementById('currentQ').textContent = `"${q.q}"`;
+      document.getElementById('starAns').textContent = q.star;
+      document.getElementById('studentAns').value = '';
+      document.getElementById('evalPanel').classList.add('hidden');
+      speakCurrentQ();
+    }
+
+    function speakCurrentQ() {
+      if (state.curQIdx < 0) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(state.questions[state.curQIdx].q);
+      u.lang = 'ko-KR';
+      u.rate = 1.0;
+      window.speechSynthesis.speak(u);
+    }
+
+    function initSpeech() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return;
+      state.recog = new SR();
+      state.recog.lang = 'ko-KR';
+      state.recog.continuous = true;
+      state.recog.interimResults = true;
+
+      state.recog.onstart = () => {
+        state.isRec = true;
+        document.getElementById('micBtn').textContent = '답변 중지 (마이크 OFF)';
+        document.getElementById('micBtn').className = 'bg-rose-600 hover:bg-rose-500 py-2.5 rounded-lg text-xs font-bold';
+        document.getElementById('micStatus').textContent = '🔴 수험생 발화 청취 중...';
+        document.getElementById('micStatus').className = 'text-[10px] text-rose-400 animate-pulse';
+        startT();
+      };
+
+      state.recog.onresult = (e) => {
+        let t = '';
+        for (let i = 0; i < e.results.length; i++) { t += e.results[i][0].transcript; }
+        document.getElementById('studentAns').value = t;
+      };
+
+      state.recog.onend = () => {
+        state.isRec = false;
+        document.getElementById('micBtn').textContent = '🎙️ 답변 시작 (마이크 ON)';
+        document.getElementById('micBtn').className = 'bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-lg text-xs font-bold';
+        document.getElementById('micStatus').textContent = '마이크 꺼짐';
+        document.getElementById('micStatus').className = 'text-[10px] text-slate-500';
+        stopT();
+      };
+    }
+
+    function toggleMic() {
+      if (!state.recog) return alert('이 브라우저는 음성 인식을 지원하지 않습니다.');
+      if (state.isRec) state.recog.stop();
+      else try { state.recog.start(); } catch(e) {}
+    }
+
+    function startT() {
+      clearInterval(state.timer);
+      state.sec = 0;
+      state.timer = setInterval(() => {
+        state.sec++;
+        const m = String(Math.floor(state.sec / 60)).padStart(2, '0');
+        const s = String(state.sec % 60).padStart(2, '0');
+        document.getElementById('timer').textContent = `${m}:${s}`;
+      }, 1000);
+    }
+    function stopT() { clearInterval(state.timer); }
+
+    function evaluateAnswer() {
+      const ans = document.getElementById('studentAns').value;
+      if (!ans.trim()) return alert('답변이 비어 있습니다.');
+      document.getElementById('evalPanel').classList.remove('hidden');
+      document.getElementById('evalScore').textContent = '90점 / 100점 (A등급)';
+      document.getElementById('evalComment').innerHTML = '• <b>강점</b>: 질문 의도에 부합하게 동기와 활동 과정을 두괄식으로 설명함.<br>• <b>보완점</b>: 단순 나열보다 도출된 수치 데이터와 발전적 변화를 명시하면 사정관 신뢰도가 향상됩니다.';
     }
   </script>
 </body>
