@@ -3,19 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Seoteuk Mate P.O.H.A.N.G - 2026 대입 세특 & AI 구술면접 올인원 플랫폼</title>
+  <title>Seoteuk Mate P.O.H.A.N.G v2 - 세특 · AI 구술면접 클라우드 웹앱</title>
+
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Seoteuk Mate" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <script src="./firebase-config.js"></script>
   
   <!-- Pretendard Font CDN -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SheetJS (xlsx) for Offline Excel Import/Export -->
+  <!-- SheetJS for Offline Excel Import/Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- PDF.js CDN for Client-side PDF Text Extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
   
   <script>
+    window.tailwind = window.tailwind || {};
     tailwind.config = {
       theme: {
         extend: {
@@ -35,10 +47,13 @@
 
   <style>
     * { box-sizing: border-box; }
+    .hidden { display: none !important; }
     body {
       font-family: 'Pretendard', sans-serif;
       -webkit-tap-highlight-color: transparent;
       margin: 0; padding: 0;
+      background-color: #f8fafc;
+      color: #1e293b;
     }
     .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -48,16 +63,16 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
     .viewport-container {
-      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .device-mode-desktop {
       width: 100% !important; max-width: 100% !important; height: 100% !important; border-radius: 0 !important; box-shadow: none !important;
     }
     .device-mode-tablet {
-      width: 768px !important; max-width: 96% !important; height: calc(100% - 16px) !important; margin: auto !important; border: 8px solid #334155 !important; border-radius: 28px !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4) !important;
+      width: 768px !important; max-width: 96% !important; height: calc(100% - 16px) !important; margin: auto !important; border: 8px solid #cbd5e1 !important; border-radius: 28px !important; box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.15) !important;
     }
     .device-mode-mobile {
-      width: 390px !important; max-width: 96% !important; height: calc(100% - 16px) !important; margin: auto !important; border: 10px solid #0f172a !important; border-radius: 38px !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+      width: 390px !important; max-width: 96% !important; height: calc(100% - 16px) !important; margin: auto !important; border: 10px solid #94a3b8 !important; border-radius: 38px !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2) !important;
     }
 
     @media print {
@@ -66,11 +81,23 @@
       .print-modal-container { position: static !important; background: transparent !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; box-shadow: none !important; }
       .print-paper { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; }
     }
+
+    /* WebApp/PWA runtime refinements */
+    input, textarea, select, [contenteditable="true"], .print-paper { user-select: text; -webkit-user-select: text; }
+    button, label { touch-action: manipulation; }
+    @supports (height: 100dvh) { body { height: 100dvh !important; } }
+    @media (max-width: 767px) {
+      header { padding-top: max(.5rem, env(safe-area-inset-top)); }
+      #main-viewport-frame { height: 100%; }
+      #desktop-workspace-nav { overflow-x: auto; }
+      #tab-content-editor, #tab-content-coordinator, #tab-content-interview, #tab-content-bulk { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+      button, label[for] { min-height: 34px; }
+    }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-800 h-screen overflow-hidden flex flex-col select-none">
+<body class="bg-slate-100 text-slate-800 h-screen overflow-hidden flex flex-col select-none">
 
-  <!-- TOP HEADER -->
+  <!-- ================= TOP HEADER ================= -->
   <header class="no-print flex-none bg-white border-b border-slate-200 px-3 sm:px-4 py-2 flex items-center justify-between shadow-xs z-30">
     <div class="flex items-center gap-2 sm:gap-3">
       <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-md shadow-blue-500/20 flex-none">
@@ -79,7 +106,7 @@
       <div>
         <div class="flex items-center gap-1.5 flex-wrap">
           <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-slate-900">Seoteuk Mate</h1>
-          <span class="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700">P.O.H.A.N.G 2026</span>
+          <span class="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">P.O.H.A.N.G 2026 · v2 CLOUD</span>
           <span id="ai-status-badge" class="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 hidden md:inline-block">
             ⚡ 안티그래비티 패킷 모드
           </span>
@@ -103,14 +130,25 @@
 
     <!-- Quick Tool Buttons -->
     <div class="flex items-center gap-1 sm:gap-1.5">
-      <button id="btn-launch-antigravity" type="button" onclick="launchAndConnectAntiGravity()" class="text-xs px-2.5 sm:px-3 py-1.5 rounded-xl font-black border transition-all flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-amber-600 shadow-sm" title="PC 구글 안티그래비티 데스크톱 앱 실행 및 소켓 직결">
+      <label class="text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1 bg-red-50 text-red-700 border-red-200 hover:bg-red-100 shadow-2xs cursor-pointer" title="생기부 또는 활동지 PDF 파일 직접 업로드">
+        <span>📄</span> <span class="hidden sm:inline">PDF 직접 주입</span>
+        <input type="file" id="pdfUploadInput" accept=".pdf" class="hidden" onchange="handlePdfUpload(event)" />
+      </label>
+
+      <button id="btn-launch-antigravity" type="button" onclick="launchAndConnectAntiGravity()" class="text-xs px-2.5 sm:px-3 py-1.5 rounded-xl font-black border transition-all flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-amber-600 shadow-sm">
         <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
         <span>⚡ 안티그래비티</span>
       </button>
 
       <button id="btn-header-ai-indicator" type="button" onclick="openApiKeyModal()" class="text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1.5 bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 shadow-2xs">
         <span id="header-ai-dot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-        <span id="header-ai-name" class="font-extrabold text-[11px]">⚡ AG모드</span>
+        <span id="header-ai-name" class="font-extrabold text-[11px]">⚡ AG패킷</span>
+      </button>
+
+      <button id="btn-cloud-account" type="button" onclick="openCloudAccountModal()" class="text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1 bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 shadow-2xs" title="Google 로그인 · 클라우드 저장 상태">
+        <span id="cloud-status-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+        <span id="cloud-status-label" class="hidden sm:inline">로컬 모드</span>
+        <span id="cloud-user-mini" class="sm:hidden">☁️</span>
       </button>
 
       <button id="btn-toggle-eval-mode" type="button" onclick="toggleStrictEvaluatorMode()" class="text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1 bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200">
@@ -118,11 +156,7 @@
         <span id="eval-mode-label" class="hidden sm:inline">냉혹 사정관</span>
       </button>
 
-      <button type="button" onclick="openBibleExplorerModal()" class="text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-black border transition-all flex items-center gap-1 bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700 shadow-2xs">
-        <span>📖</span> <span class="hidden sm:inline">탐구 바이블</span>
-      </button>
-
-      <button type="button" onclick="openUnivTipsModal()" class="text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1 bg-indigo-50 border-indigo-300 text-indigo-800 hover:bg-indigo-100 shadow-2xs">
+      <button type="button" onclick="openUnivTipsModal()" class="text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1 bg-indigo-50 border-indigo-200 text-indigo-800 hover:bg-indigo-100 shadow-2xs">
         <span>🎓</span> <span class="hidden sm:inline">2026 면접팁</span>
       </button>
 
@@ -132,33 +166,29 @@
     </div>
   </header>
 
-  <!-- MAIN WORKSPACE -->
-  <div class="flex-1 bg-slate-900 overflow-hidden flex flex-col justify-center items-center p-0 md:p-2">
+  <!-- MAIN WORKSPACE FRAME -->
+  <div class="flex-1 bg-slate-200 overflow-hidden flex flex-col justify-center items-center p-0 md:p-2">
     <div id="main-viewport-frame" class="viewport-container device-mode-desktop bg-slate-100 flex flex-col h-full overflow-hidden relative">
+
+      <!-- 스마트폰 전용 1카드 컨트롤러 -->
+      <div id="mobile-card-header" class="hidden no-print bg-white border-b border-slate-200 px-3 py-2 items-center justify-between z-30">
+        <button type="button" onclick="prevMobileCard()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-xs flex items-center gap-1">
+          ◀ 이전
+        </button>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-blue-600" id="mDot-0"></span>
+          <span class="w-2 h-2 rounded-full bg-slate-300" id="mDot-1"></span>
+          <span class="w-2 h-2 rounded-full bg-slate-300" id="mDot-2"></span>
+          <span id="mobile-card-title" class="text-xs font-black text-slate-800 ml-1">카드 1/3: 에디터</span>
+        </div>
+        <button type="button" onclick="nextMobileCard()" class="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center gap-1 shadow-xs">
+          다음 ▶
+        </button>
+      </div>
 
       <div class="flex-1 flex overflow-hidden relative">
 
-        <!-- MOBILE BOTTOM NAVIGATION -->
-        <nav id="mobile-nav-bar" class="no-print fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around p-1.5 z-40 shadow-lg md:hidden">
-          <button type="button" onclick="switchMainTab('editor')" class="nav-tab-btn flex-1 py-1 flex flex-col items-center text-blue-600 font-bold text-[11px]" data-tab="editor">
-            <span class="text-base">📝</span>
-            <span>에디터/진단</span>
-          </button>
-          <button type="button" onclick="switchMainTab('coordinator')" class="nav-tab-btn flex-1 py-1 flex flex-col items-center text-slate-400 font-medium text-[11px]" data-tab="coordinator">
-            <span class="text-base">🧭</span>
-            <span>지식/코디</span>
-          </button>
-          <button type="button" onclick="switchMainTab('interview')" class="nav-tab-btn flex-1 py-1 flex flex-col items-center text-slate-400 font-medium text-[11px]" data-tab="interview">
-            <span class="text-base">🎙️</span>
-            <span>AI 구술면접</span>
-          </button>
-          <button type="button" onclick="switchMainTab('bulk')" class="nav-tab-btn flex-1 py-1 flex flex-col items-center text-slate-400 font-medium text-[11px]" data-tab="bulk">
-            <span class="text-base">👥</span>
-            <span>다인수 일괄</span>
-          </button>
-        </nav>
-
-        <!-- LEFT PANEL: ASSISTANT / MACRO ENGINE (DESKTOP) -->
+        <!-- LEFT PANEL -->
         <div id="panel-left" class="no-print hidden md:flex flex-col w-[360px] lg:w-[420px] bg-white border-r border-slate-200 h-full flex-none z-10">
           
           <div class="flex border-b border-slate-100 bg-slate-50/80 p-1.5 gap-1 text-xs font-bold">
@@ -188,18 +218,17 @@
                     <span id="chat-provider-badge" class="px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 text-[10px] font-black">⚡ 안티그래비티 패킷</span>
                   </div>
                   <p class="text-slate-600">
-                    사정관 3대 평가요소(학업 40 : 진로 40 : 공동체 20) 및 <strong>4단계 꼬리물기 탐구 체인</strong>이 준비되었습니다.<br>
-                    수업 중 관찰 키워드를 입력하시면 고정 더미 문장 없이 1,500바이트 규격으로 자동 생성됩니다.
+                    사정관 3대 평가요소(학업 40 : 진로 40 : 공동체 20) 및 <strong>4단계 꼬리물기 탐구 체인</strong>이 적용됩니다.<br>
+                    하단에 학생 관찰 키워드를 입력하시면 고정 더미 문장 없이 1,500바이트 규격으로 자동 조립됩니다.
                   </p>
                 </div>
               </div>
             </div>
 
-            <!-- Chat Input Bar -->
             <div class="p-2.5 sm:p-3 bg-white border-t border-slate-200 flex flex-col gap-2">
-              <div class="flex items-center gap-2">
-                <span class="text-[11px] font-bold text-slate-500 flex-none">희망진로:</span>
-                <input id="input-career" type="text" placeholder="예: 컴퓨터공학, 의예과, 기계공학, 시각디자인" class="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500 font-semibold" />
+              <div class="grid grid-cols-2 gap-1.5">
+                <input id="input-career" type="text" placeholder="희망진로 (예: 컴퓨터공학, 의예과)" class="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none font-semibold" />
+                <input id="input-major" type="text" placeholder="목표학과 (예: 인공지능융합학부)" class="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none font-semibold" />
               </div>
 
               <div class="flex gap-1 overflow-x-auto no-scrollbar py-0.5">
@@ -209,7 +238,7 @@
               </div>
 
               <div class="flex items-center gap-1.5">
-                <input id="input-chat" type="text" onkeydown="if(event.key==='Enter') sendChatMessage();" placeholder="수업 관찰 키워드 또는 탐구 주제 입력..." class="flex-1 text-xs sm:text-sm px-3 py-1.5 sm:py-2 bg-slate-100 border-0 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" />
+                <input id="input-chat" type="text" onkeydown="if(event.key==='Enter') sendChatMessage();" placeholder="수업 관찰 키워드 또는 탐구 활동 입력..." class="flex-1 text-xs sm:text-sm px-3 py-1.5 sm:py-2 bg-slate-100 border-0 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" />
                 <button id="btn-send-chat" type="button" onclick="sendChatMessage()" class="px-3 py-1.5 sm:py-2 bg-blue-600 text-white font-bold rounded-xl text-xs hover:bg-blue-700 transition-all shadow-xs">
                   생성
                 </button>
@@ -226,7 +255,7 @@
                 </h3>
                 <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">원클릭 주입</span>
               </div>
-              <p class="text-[11px] text-slate-500">계열별 버튼을 누르면 추천도서와 논문, 1500B 완충 세특이 에디터에 주입됩니다.</p>
+              <p class="text-[11px] text-slate-500">클릭 시 추천도서, 논문 및 1,500B 완충 세특이 에디터에 자동 반영됩니다.</p>
 
               <div class="grid grid-cols-2 gap-1.5 pt-1">
                 <button type="button" onclick="applyMacroPreset('engineering')" class="p-2 rounded-xl bg-blue-50 border border-blue-200 text-left hover:bg-blue-100 transition">
@@ -256,7 +285,7 @@
               </div>
             </div>
 
-            <!-- 수동 매크로 조립기 -->
+            <!-- 맞춤형 조립기 -->
             <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-2.5">
               <h4 class="font-bold text-slate-800 text-[11px]">🛠️ 맞춤형 세특 문단 조립기</h4>
               <div>
@@ -292,8 +321,8 @@
         <!-- RIGHT WORKSPACE PANEL -->
         <div id="panel-right" class="flex-1 flex flex-col h-full bg-slate-100 overflow-hidden relative">
 
-          <!-- Top Workspace Nav Bar -->
-          <div class="no-print bg-white border-b border-slate-200 px-3 sm:px-4 pt-2 flex items-center justify-between shadow-2xs z-20">
+          <!-- Desktop Nav -->
+          <div id="desktop-workspace-nav" class="no-print bg-white border-b border-slate-200 px-3 sm:px-4 pt-2 flex items-center justify-between shadow-2xs z-20">
             <div class="flex items-center gap-1 sm:gap-2">
               <button type="button" onclick="switchMainTab('editor')" id="tab-btn-editor" class="tab-indicator pb-2 px-2 sm:px-3 font-bold text-xs sm:text-sm border-b-2 border-blue-600 text-blue-600 transition-colors flex items-center gap-1">
                 <span>📝</span> <span>에디터 & 진단</span>
@@ -334,7 +363,7 @@
               </div>
             </div>
 
-            <!-- Subject Selector & Semester Controls Bar -->
+            <!-- Controls Bar -->
             <div class="no-print bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-xs mb-2.5 space-y-2">
               <div id="subject-selector-container" class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
                 <div class="flex items-center gap-1.5 flex-wrap">
@@ -362,7 +391,7 @@
                 </div>
               </div>
 
-              <!-- Version 1 / 2 / 3 Slots -->
+              <!-- Version Slots -->
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-1.5" id="version-tabs-group">
                   <button type="button" onclick="switchVersion('v1')" id="btn-ver-v1" class="text-xs px-2.5 sm:px-3 py-1 rounded-xl font-black transition-all flex items-center gap-1 bg-blue-600 text-white shadow-2xs">
@@ -390,7 +419,7 @@
               </div>
             </div>
 
-            <!-- Byte & Character Counter Bar -->
+            <!-- Byte Counter Bar -->
             <div class="no-print bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-xs mb-2.5 space-y-2">
               <div class="flex flex-wrap items-center justify-between gap-2.5">
                 <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -573,7 +602,7 @@
             <div class="max-w-4xl mx-auto w-full space-y-4">
               <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 
-                <!-- 좌측 OCR 및 질문 추출 (5 cols) -->
+                <!-- 좌측 OCR 및 질문 추출 -->
                 <div class="lg:col-span-5 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
                   <div class="flex items-center justify-between">
                     <h3 class="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -595,7 +624,7 @@
                   </div>
                 </div>
 
-                <!-- 우측 구글 보이스 실시간 모의면접 (7 cols) -->
+                <!-- 우측 구글 보이스 실시간 모의면접 -->
                 <div class="lg:col-span-7 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
                   <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
                     <span class="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -732,7 +761,7 @@
             <span>🚀</span> 안티그래비티 앱 구동 상태: 정상 가동
           </span>
           <p class="text-amber-900/80 text-[11px] leading-relaxed">
-            PC에 설치된 구글 안티그래비티(Google Antigravity) 클라이언트로 실행 신호(IPC Protocol)를 전송했습니다. API 키 소모 없이 고속 패킷 모드로 세특을 완충합니다.
+            PC에 설치된 구글 안티그래비티 클라이언트로 실행 신호(IPC Protocol)를 전송했습니다. API 키 소모 없이 고속 패킷 모드로 세특을 완충합니다.
           </p>
         </div>
 
@@ -777,10 +806,12 @@
           <span class="font-extrabold text-slate-700">목표 계열:</span>
           <select id="bible-field-filter" onchange="renderBibleTopicsList()" class="p-1.5 bg-blue-50 border border-blue-200 rounded-lg font-bold text-blue-900 outline-none">
             <option value="all">전체 계열</option>
-            <option value="의약계열">🩺 의약계열</option>
             <option value="공학계열">⚙️ 공학계열</option>
-            <option value="교육계열">🎓 교육계열</option>
+            <option value="의약계열">🩺 의약계열</option>
             <option value="예체능계열">🎨 예체능계열</option>
+            <option value="인문계열">📖 인문계열</option>
+            <option value="사회계열">📊 사회계열</option>
+            <option value="자연계열">🌿 자연계열</option>
           </select>
         </div>
         <div class="flex items-center gap-1.5 flex-1 max-w-xs">
@@ -808,13 +839,13 @@
           <b class="text-blue-900">서울대 (지균: 서류확인 / 일반: 제시문)</b>: 지균은 세특 도서 및 실험 원리를 철저히 확인하며, 일반전형은 45분간 제시문 심층 구술(인문·수리)을 평가함.
         </div>
         <div class="p-3 rounded-xl bg-rose-50/70 border border-rose-200">
-          <b class="text-rose-900">고려대(계열적합) & 연세대(활동우수)</b>: 고려대 계열적합 면접 비중 40%, 연세대 다제시문 비교 분석 평가[cite: 1]. 두괄식 3단 논법 구성 필수.
+          <b class="text-rose-900">고려대(계열적합) & 연세대(활동우수)</b>: 고려대 계열적합 면접 비중 40%, 연세대 다제시문 비교 분석 평가. 두괄식 3단 논증 필수.
         </div>
         <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200">
-          <b class="text-amber-900">성균관·한양·광운대</b>: 성균관대 탐구형 면접 학과 분리, 광운대 참빛인재1 면접 40%로 확대(1단계 3.5배수 선발)[cite: 1].
+          <b class="text-amber-900">성균관·한양·광운대</b>: 성균관대 탐구형 면접 학과 분리, 광운대 참빛인재1 면접 40%로 확대(1단계 3.5배수 선발).
         </div>
         <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200">
-          <b class="text-emerald-900">2026 기재요령 유의사항</b>: 학폭 조치사항 감점 적용[cite: 1, 8], 블라인드 규정(교복/학교명/부모 직업 언급 시 실격) 엄수.
+          <b class="text-emerald-900">2026 기재요령 유의사항</b>: 학폭 조치사항 감점 적용, 블라인드 규정(교복/학교명/부모 직업 언급 시 실격) 엄수.
         </div>
       </div>
     </div>
@@ -854,7 +885,6 @@
         <button type="button" onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
       </div>
 
-      <!-- Current Engine Status Card -->
       <div id="modal-current-status-banner" class="p-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs">
         <div>
           <span class="text-[10px] font-black uppercase text-amber-700 block">현재 가동 중인 엔진</span>
@@ -866,7 +896,6 @@
         </span>
       </div>
 
-      <!-- Provider Selector Tabs -->
       <div class="grid grid-cols-3 sm:grid-cols-6 gap-1 text-xs font-bold pt-1">
         <button type="button" onclick="selectLlmProvider('antigravity')" id="provider-btn-antigravity" class="p-2 rounded-xl border text-center transition-all bg-amber-500 text-white border-amber-600 text-[11px] font-black shadow-xs">
           ⚡ 안티그래비티
@@ -888,7 +917,6 @@
         </button>
       </div>
 
-      <!-- Key Input Area -->
       <div class="space-y-2.5 pt-1 text-xs">
         <div id="wrapper-api-key">
           <div class="flex items-center justify-between mb-1">
@@ -1095,328 +1123,8 @@
   <!-- TOAST CONTAINER -->
   <div id="toast-container" class="no-print fixed bottom-16 md:bottom-6 right-4 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <!-- JAVASCRIPT LOGIC -->
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    const CATEGORIES = ['교과세특', '자율활동', '진로활동', '동아리활동', '개인세특'];
-    const BYTE_LIMITS = {
-      '교과세특': { s1: 1500, s2: 1500, full: 3000 },
-      '자율활동': { s1: 750,  s2: 750,  full: 1500 },
-      '진로활동': { s1: 1050, s2: 1050, full: 2100 },
-      '동아리활동': { s1: 750, s2: 750,  full: 1500 },
-      '개인세특': { s1: 750,  s2: 750,  full: 1500 }
-    };
-
-    const DEFAULT_SUBJECTS = ["인공지능 수학", "미적분Ⅰ", "물리학", "정보", "독서와 작문", "통합사회"];
-
-    // 6대 계열 바이블 통합 데이터베이스
-    const BIBLE_DATABASE = {
-      engineering: {
-        subject: "정보 / 인공지능 기초",
-        career: "인공지능·컴퓨터공학",
-        obs: "멀티모달 AI 기술의 원리를 분석하고, 텍스트와 이미지 간 교차 주의집중(Cross-Attention) 메커니즘을 탐구하여 도심항공교통(UAM) 관제 시뮬레이션 알고리즘을 설계함.",
-        synthesis: "교과 수업 중 다룬 인공신경망의 가중치 최적화 원리를 바탕으로 전공 희망인 인공지능·컴퓨터공학 분야의 멀티모달 기술을 심층 탐구함. '2024 IT 메가 트렌드(김재필)'를 읽고 텍스트, 음성, 시각 데이터를 융합 처리하는 트랜스포머 기반 교차 주의집중 메커니즘에 착안하여 관련 논문 '멀티모달 적용의 교육 효과 분석'을 교차 검토함. 도심항공교통(UAM) 관제에서 발생할 수 있는 센서 간 신호 간섭과 정량적 데이터 지연 오차를 수학적으로 모델링하고, 파이썬 기반 시뮬레이션을 통해 오차율을 18.2% 개선하는 성과를 도출함. 이를 학급 구성원들에게 개조식 논리와 시각화 차트로 설명하며 피드백을 유연하게 수용하는 발전적 소통 역량을 보임. 배운 교과 지식을 첨단 공학 기술에 적극 투영하는 뛰어난 전공 적합성과 문제해결력을 증명함."
-      },
-      medical: {
-        subject: "생명과학 / 화학",
-        career: "의예과·뇌인지의학",
-        obs: "청소년기 전두엽 시냅스 가지치기 및 수초화 메커니즘을 조사하고, 환경적 스트레스가 후성유전적 유전자 발현 조절(DNA 메틸화)에 미치는 영향을 문헌 분석함.",
-        synthesis: "생명과학 교과 시간에 학습한 신경계 항상성과 호르몬 분비 기전을 바탕으로 의예과 진로와 연계하여 뇌신경 발달을 심화 탐구함. '10대의 뇌(프랜시스 젠슨)'를 탐독하고 성인 뇌와 달리 전두엽의 수초화가 미완성된 10대 뇌의 가소성과 취약성을 분석함. 환경적 자극이 DNA 메틸화와 히스톤 변형을 통해 신경전달물질 수용체 발현에 미치는 후성유전학적 영향을 다룬 학술 논문을 검토하여 관련 기전을 도식화함. 뇌과학적 관점에서 청소년기 스트레스 통제의 중요성을 학급 급우들에게 논리적으로 설명하고 공감대를 형성함. 생명 현상을 분자 수준과 개체 행동 수준에서 입체적으로 조망하는 탁월한 학업역량과 전인적 의료인으로서의 자질을 나타냄."
-      },
-      arts: {
-        subject: "공통국어1 / 미술",
-        career: "시각디자인·콘텐츠기획",
-        obs: "색채 심리학과 프레이밍 효과를 활용하여 공공 디자인의 시각적 설득력을 분석하고, 디지털 환경에서 대체 불가능 토큰(NFT) 아트가 지니는 미학적 가치를 비평함.",
-        synthesis: "국어와 미술 교과에서 배운 의사소통 맥락과 시각 언어의 상징성을 융합하여 시각디자인 분야의 학술적 탐구를 주도적으로 수행함. '컬러愛 물들다(밥 햄블리)'를 읽고 색채가 인간의 인지 편향과 프레이밍 효과에 미치는 심리학적 상관관계를 분석함. 나아가 블록체인 기반의 NFT 아트와 디지털 미디어 플랫폼의 변화 양상을 다룬 '누구나 할 수 있는 NFT 아트테크'를 연계 독서하여 전통 예술과 디지털 예술의 향유 방식 차이를 체계적으로 정립함. 공공 캠페인 포스터 제작 프로젝트에서 텍스트와 여백, 색상의 대비를 정밀하게 조율하여 전달력을 24.6% 향상시키는 실천적 디자인 역량을 증명함. 예술의 사회적 책무와 심미적 가치를 종합적으로 고려하는 뛰어난 기획력을 보임."
-      },
-      humanities: {
-        subject: "독서와 작문 / 문학",
-        career: "국어국문·문화비평",
-        obs: "문학 작품에 나타난 풍자와 반어의 사회적 기능을 분석하고, 디지털 매체 환경에서 언어의 정제성과 공공 언어 사용 실태를 비판적으로 성찰하여 비평문을 작성함.",
-        synthesis: "문학 교과에서 학습한 한국 문학사의 흐름과 맥락을 바탕으로 인문학적 성찰을 심화함. '언어의 온도(이기주)'를 읽고 일상 언어가 지니는 상호작용적 온기와 공공 언어로서의 책임감을 탐구함. 김시습의 '금오신화'와 채만식의 '태평천하'에 나타난 풍자적 웃음의 공격성과 해학의 포용성을 비교 대조하여 사회적 모순을 폭로하는 문학적 기법의 변천을 학술적으로 고찰함. 디지털 미디어 환경에서 무분별한 혐오 표현과 축약어가 담화 공동체에 미치는 부정적 영향을 실증적으로 분석하고, 품격 있는 국어 생활을 위한 대안적 글쓰기를 실천함. 언어의 미학적 가치와 윤리적 책무를 균형 있게 성찰하는 인문학적 소양을 깊이 있게 증명함."
-      },
-      social: {
-        subject: "경제 / 통합사회",
-        career: "경영학·금융경제",
-        obs: "행동경제학의 선택 설계(Nudge)와 슬러지(Sludge) 개념을 학교 환경에 적용하여 급식 잔반 감소 효과를 실증하고, 거시경제 지표와 금융 정책의 상관관계를 분석함.",
-        synthesis: "통합사회 및 경제 교과에서 배운 시장 경제의 원리와 합리적 선택 이론을 바탕으로 행동경제학적 관점을 융합 적용함. '넛지(리처드 탈러)'를 탐독하고 전통 경제학의 '합리적 인간(Homo Economicus)' 모델의 한계를 비판적으로 검토함. 교내 급식실에서 식판 동선과 시각적 안내판을 조정한 디폴트 옵션 실험을 자체 기획하여 3주간 일평균 잔반 배출량을 21.3% 감축하는 정량적 성과를 입증함. 나아가 '기준금리 인상이 청년층 금융 자산 형성에 미치는 영향'을 거시경제 지표(GDP, CPI)와 연계 분석하여 보고서로 제출함. 이론적 지식을 현실 문제 해결에 주도적으로 접목하는 탁월한 분석력과 실천적 리더십을 입증함."
-      },
-      natural: {
-        subject: "통합과학 / 지구과학",
-        career: "기후환경과학·생태학",
-        obs: "생태경제학과 도넛 경제 모델을 기반으로 탄소중립 시나리오의 실효성을 평가하고, 기후 변화에 따른 생물다양성 감소율을 정량 분석하여 지역 생태계 보전 방안을 수립함.",
-        synthesis: "통합과학 시간에 다룬 지구 시스템의 물질 순환과 생태계 평형 원리를 바탕으로 전 지구적 기후 위기 극복 방안을 심도 있게 탐구함. '기후를 위한 경제학(김병권)'을 읽고 무조건적인 양적 성장이 초래한 생태적 한계선을 인식하며 도넛 경제학 모델의 지속가능성을 검토함. 지역 하천의 식생 분포와 수온 변화 데이터를 3개년 누적 자료로 수집하여 기후 변화가 수생 생물다양성에 미치는 부정적 영향을 통계적으로 분석함. 신재생에너지 전환과 탄소포집활용저장(CCUS) 기술의 에너지 효율성을 물리학적·화학적 관점에서 비교 평가하여 정책 제안서를 완성함. 자연과학적 데이터에 기반하여 사회적 공공선을 추구하는 성숙한 환경 과학자로서의 역량을 확고히 드러냄."
-      }
-    };
-
-    let currentProvider = localStorage.getItem('sm_llm_provider') || 'antigravity';
-    let savedApiKeys = {
-      gemini: localStorage.getItem('sm_api_key_gemini') || '',
-      openai: localStorage.getItem('sm_api_key_openai') || '',
-      claude: localStorage.getItem('sm_api_key_claude') || '',
-      deepseek: localStorage.getItem('sm_api_key_deepseek') || '',
-      custom: localStorage.getItem('sm_api_key_custom') || ''
-    };
-    let savedModels = {
-      gemini: localStorage.getItem('sm_model_gemini') || 'gemini-2.5-flash',
-      openai: localStorage.getItem('sm_model_openai') || 'gpt-4o-mini',
-      claude: localStorage.getItem('sm_model_claude') || 'claude-3-5-sonnet',
-      deepseek: localStorage.getItem('sm_model_deepseek') || 'deepseek-chat',
-      custom: localStorage.getItem('sm_model_custom') || 'llama3.1'
-    };
-
-    let isKeyVisible = false;
-    let isStrictEvaluatorMode = false;
-    let isHighlightMode = false;
-    let isInterviewRecording = false;
-    let interviewRecognition = null;
-    let interviewTimerInterval = null;
-    let interviewSeconds = 0;
-    let interviewQuestions = [];
-    let currentInterviewIndex = -1;
-
-    let activeCategory = '교과세특';
-    let subjectList = [...DEFAULT_SUBJECTS];
-    let activeSubject = DEFAULT_SUBJECTS[0];
-    let activeSemester = 's1';
-    let activeVersion = 'v1';
-
-    let subjectData = {};
-    let creativeData = {};
-    let bulkStudents = [];
-
-    function initDataStructures() {
-      subjectList.forEach(s => {
-        subjectData[s] = {
-          s1: { v1: '', v2: '', v3: '' },
-          s2: { v1: '', v2: '', v3: '' }
-        };
-      });
-      CATEGORIES.forEach(c => {
-        if (c !== '교과세특') {
-          creativeData[c] = {
-            s1: { v1: '', v2: '', v3: '' },
-            s2: { v1: '', v2: '', v3: '' }
-          };
-        }
-      });
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      initDataStructures();
-      loadDemoStudentData();
-      renderCategoryButtons();
-      renderSubjectDropdown();
-      renderVersionTabs();
-      updateNeisStats();
-      updateStrictEvaluatorUI();
-      renderRadarChart([95, 96, 92, 94, 88]);
-      updateGlobalAiStatusUI();
-      initSpeechRecognition();
-    });
-
-    function updateGlobalAiStatusUI() {
-      const dot = document.getElementById('header-ai-dot');
-      const name = document.getElementById('header-ai-name');
-      const btn = document.getElementById('btn-header-ai-indicator');
-
-      if (currentProvider === 'antigravity') {
-        btn.className = "text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1.5 bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 shadow-2xs";
-        dot.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
-        name.textContent = "⚡ AG패킷";
-      } else {
-        const key = savedApiKeys[currentProvider];
-        const hasKey = key && key.trim().length > 5;
-        if (hasKey) {
-          btn.className = "text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1.5 bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100 shadow-2xs";
-          dot.className = "w-2 h-2 rounded-full bg-emerald-500";
-          name.textContent = `🟢 ${currentProvider.toUpperCase()}`;
-        } else {
-          btn.className = "text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1.5 bg-rose-50 text-rose-900 border-rose-300 hover:bg-rose-100 shadow-2xs";
-          dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping";
-          name.textContent = `🔴 ${currentProvider.toUpperCase()}`;
-        }
-      }
-    }
-
-    function openApiKeyModal() {
-      selectLlmProvider(currentProvider);
-      document.getElementById('modal-apikey').classList.remove('hidden');
-    }
-
-    function closeApiKeyModal() {
-      document.getElementById('modal-apikey').classList.add('hidden');
-    }
-
-    function selectLlmProvider(provider) {
-      currentProvider = provider;
-      const providers = ['antigravity', 'gemini', 'openai', 'claude', 'deepseek', 'custom'];
-      providers.forEach(p => {
-        const btn = document.getElementById(`provider-btn-${p}`);
-        if (btn) {
-          btn.className = p === provider 
-            ? "p-2 rounded-xl border text-center transition-all bg-blue-600 text-white border-blue-700 text-[11px] font-black shadow-xs"
-            : "p-2 rounded-xl border text-center transition-all bg-slate-50 border-slate-200 text-slate-600 text-[11px] hover:bg-slate-100";
-        }
-      });
-
-      const keyInput = document.getElementById('input-llm-api-key');
-      const modelInput = document.getElementById('input-llm-model');
-      if (provider === 'antigravity') {
-        keyInput.value = "";
-        keyInput.disabled = true;
-        modelInput.value = "antigravity-neural-packet-v2";
-        modelInput.disabled = true;
-      } else {
-        keyInput.disabled = false;
-        modelInput.disabled = false;
-        keyInput.value = savedApiKeys[provider] || '';
-        modelInput.value = savedModels[provider] || '';
-      }
-    }
-
-    function saveLlmSettings() {
-      localStorage.setItem('sm_llm_provider', currentProvider);
-      if (currentProvider !== 'antigravity') {
-        const key = document.getElementById('input-llm-api-key').value.trim();
-        const model = document.getElementById('input-llm-model').value.trim();
-        savedApiKeys[currentProvider] = key;
-        savedModels[currentProvider] = model;
-        localStorage.setItem(`sm_api_key_${currentProvider}`, key);
-        localStorage.setItem(`sm_model_${currentProvider}`, model);
-      }
-      updateGlobalAiStatusUI();
-      closeApiKeyModal();
-      showToast("AI 설정이 저장되었습니다.", "success");
-    }
-
-    function resetToAntigravityMode() {
-      currentProvider = 'antigravity';
-      localStorage.setItem('sm_llm_provider', 'antigravity');
-      updateGlobalAiStatusUI();
-      closeApiKeyModal();
-      showToast("⚡ 안티그래비티 패킷 직결 모드로 복귀했습니다.", "info");
-    }
-
-    function launchAndConnectAntiGravity() {
-      currentProvider = 'antigravity';
-      localStorage.setItem('sm_llm_provider', 'antigravity');
-      updateGlobalAiStatusUI();
-      triggerNativeAntiGravityApp();
-      document.getElementById('antigravity-prompt-snippet').value = 
-        `[Seoteuk Mate AntiGravity Agent Task]\n과목: ${activeSubject} (${activeSemester})\n세특: ${getCurrentText().slice(0, 150)}...\n지침: 2022 개정 교육과정 기준 40:40:20 황금비율 및 1,500바이트 완충`;
-      document.getElementById('modal-antigravity-dock').classList.remove('hidden');
-      showToast("⚡ 안티그래비티 앱 호출 및 패킷 모드로 직결되었습니다!", "success");
-    }
-
-    function triggerNativeAntiGravityApp() {
-      try {
-        const hiddenIframe = document.createElement('iframe');
-        hiddenIframe.style.display = 'none';
-        hiddenIframe.src = 'antigravity://open';
-        document.body.appendChild(hiddenIframe);
-        setTimeout(() => hiddenIframe.remove(), 1000);
-      } catch (e) {}
-    }
-
-    function closeAntiGravityDockModal() {
-      document.getElementById('modal-antigravity-dock').classList.add('hidden');
-    }
-
-    function copyAntiGravityAgentPrompt() {
-      fallbackCopy(document.getElementById('antigravity-prompt-snippet').value);
-      showToast("📋 안티그래비티 에이전트 프롬프트가 복사되었습니다.", "success");
-    }
-
-    function setDeviceView(mode) {
-      const frame = document.getElementById('main-viewport-frame');
-      ['desktop', 'tablet', 'mobile'].forEach(m => {
-        const btn = document.getElementById(`btn-device-${m}`);
-        if (btn) btn.className = m === mode 
-          ? "px-2.5 py-1 rounded-lg transition-all bg-white text-blue-700 shadow-xs flex items-center gap-1 font-black"
-          : "px-2.5 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1";
-      });
-      frame.className = `viewport-container device-mode-${mode} bg-slate-100 flex flex-col h-full overflow-hidden relative`;
-    }
-
-    function switchMainTab(tab) {
-      ['editor', 'coordinator', 'interview', 'bulk'].forEach(t => {
-        const btn = document.getElementById(`tab-btn-${t}`);
-        const content = document.getElementById(`tab-content-${t}`);
-        if (btn) btn.className = t === tab
-          ? "tab-indicator pb-2 px-2 sm:px-3 font-bold text-xs sm:text-sm border-b-2 border-blue-600 text-blue-600 transition-colors flex items-center gap-1"
-          : "tab-indicator pb-2 px-2 sm:px-3 font-bold text-xs sm:text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1";
-        if (content) content.classList.toggle('hidden', t !== tab);
-      });
-    }
-
-    function switchLeftPanel(panel) {
-      document.getElementById('view-chat').classList.toggle('hidden', panel !== 'chat');
-      document.getElementById('view-macro').classList.toggle('hidden', panel !== 'macro');
-      document.getElementById('left-tab-chat').className = panel === 'chat'
-        ? "flex-1 py-1.5 rounded-md bg-white text-blue-700 shadow-xs text-center transition-all font-bold"
-        : "flex-1 py-1.5 rounded-md text-slate-500 hover:text-slate-800 text-center transition-all";
-      document.getElementById('left-tab-macro').className = panel === 'macro'
-        ? "flex-1 py-1.5 rounded-md bg-white text-blue-700 shadow-xs text-center transition-all font-bold"
-        : "flex-1 py-1.5 rounded-md text-slate-500 hover:text-slate-800 text-center transition-all";
-    }
-
-    function toggleStrictEvaluatorMode() {
-      isStrictEvaluatorMode = !isStrictEvaluatorMode;
-      updateStrictEvaluatorUI();
-      showToast(isStrictEvaluatorMode ? "🧊 [냉혹 사정관 모드 가동]" : "💡 [친절 지도 모드 복귀]", "info");
-    }
-
-    function updateStrictEvaluatorUI() {
-      const btn = document.getElementById('btn-toggle-eval-mode');
-      const label = document.getElementById('eval-mode-label');
-      const banner = document.getElementById('eval-mode-banner');
-      const bannerText = document.getElementById('banner-mode-text');
-
-      if (isStrictEvaluatorMode) {
-        btn.className = "text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-black border transition-all flex items-center gap-1 bg-rose-100 text-rose-800 border-rose-300 shadow-xs";
-        label.textContent = "냉혹 사정관 ON";
-        banner.className = "px-3 py-1.5 bg-rose-50 border-b border-rose-200 flex items-center justify-between text-[11px] font-bold text-rose-900";
-        bannerText.textContent = "냉혹 사정관 모드 가동 (허수 활동 감점 진단)";
-      } else {
-        btn.className = "text-xs px-2 sm:px-2.5 py-1.5 rounded-xl font-bold border transition-all flex items-center gap-1 bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200";
-        label.textContent = "냉혹 사정관";
-        banner.className = "px-3 py-1.5 bg-blue-50 border-b border-blue-100 flex items-center justify-between text-[11px] font-bold text-blue-800";
-        bannerText.textContent = "친절 지도 모드 (성장 및 인과관계 중심)";
-      }
-    }
-
-    function getCurrentText() {
-      const sem = activeSemester === 'full' ? 's1' : activeSemester;
-      if (activeCategory === '교과세특') {
-        return subjectData[activeSubject]?.[sem]?.[activeVersion] || '';
-      }
-      return creativeData[activeCategory]?.[sem]?.[activeVersion] || '';
-    }
-
-    function setCurrentText(text) {
-      const sem = activeSemester === 'full' ? 's1' : activeSemester;
-      if (activeCategory === '교과세특') {
-        if (!subjectData[activeSubject]) subjectData[activeSubject] = { s1: { v1: '', v2: '', v3: '' }, s2: { v1: '', v2: '', v3: '' } };
-        subjectData[activeSubject][sem][activeVersion] = text;
-      } else {
-        if (!creativeData[activeCategory]) creativeData[activeCategory] = { s1: { v1: '', v2: '', v3: '' }, s2: { v1: '', v2: '', v3: '' } };
-        creativeData[activeCategory][sem][activeVersion] = text;
-      }
-    }
-
-    function calculateNeisBytes(text) {
-      if (!text) return 0;
-      let bytes = 0;
-      for (let i = 0; i < text.length; i++) {
-        const code = text.charCodeAt(i);
-        if (code === 10) bytes += 2;
-        else if (code === 13) continue;
-        else if (code <= 127) bytes += 1;
-        else bytes += 3;
-      }
-      return bytes;
-    }
-
     function updateNeisStats() {
       const text = getCurrentText();
       const bytes = calculateNeisBytes(text);
@@ -1458,94 +1166,7 @@
         lockBadge.innerHTML = "<span>🔒</span> 4:4:2 황금비 락 정상 달성";
       } else {
         lockBadge.className = "px-2 py-0.8 rounded-lg bg-amber-50 text-amber-900 border border-amber-300 font-black flex items-center gap-1";
-        lockBadge.innerHTML = "<span>⚠️</span> 황금비율 미달 (공동체/정량 탐구 보강 필요)";
-      }
-    }
-
-    function renderCategoryButtons() {
-      const container = document.getElementById('category-button-group');
-      container.innerHTML = CATEGORIES.map(cat => `
-        <button type="button" onclick="switchCategory('${cat}')" class="px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold transition-all shadow-2xs ${
-          activeCategory === cat ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
-        }">${cat}</button>
-      `).join('');
-      document.getElementById('subject-selector-container').classList.toggle('hidden', activeCategory !== '교과세특');
-    }
-
-    function switchCategory(cat) {
-      activeCategory = cat;
-      renderCategoryButtons();
-      renderVersionTabs();
-      document.getElementById('seoteuk-textarea').value = getCurrentText();
-      updateNeisStats();
-    }
-
-    function renderSubjectDropdown() {
-      const select = document.getElementById('subject-select');
-      select.innerHTML = subjectList.map(subj => `
-        <option value="${subj}" ${subj === activeSubject ? 'selected' : ''}>${subj}</option>
-      `).join('');
-    }
-
-    function handleSubjectChange(subj) {
-      activeSubject = subj;
-      renderVersionTabs();
-      document.getElementById('seoteuk-textarea').value = getCurrentText();
-      updateNeisStats();
-      showToast(`과목 전환: [${subj}]`, "info");
-    }
-
-    function switchSemester(sem) {
-      activeSemester = sem;
-      ['s1', 's2', 'full'].forEach(s => {
-        const btn = document.getElementById(`btn-sem-${s}`);
-        if (btn) btn.className = s === sem 
-          ? "text-xs px-2.5 py-0.8 rounded-lg font-black transition-all bg-white text-blue-700 shadow-2xs"
-          : "text-xs px-2.5 py-0.8 rounded-lg font-bold transition-all text-slate-600 hover:text-slate-900";
-      });
-      document.getElementById('seoteuk-textarea').value = getCurrentText();
-      renderVersionTabs();
-      updateNeisStats();
-    }
-
-    function renderVersionTabs() {
-      ['v1', 'v2', 'v3'].forEach(ver => {
-        const btn = document.getElementById(`btn-ver-${ver}`);
-        const badge = document.getElementById(`ver-badge-${ver}`);
-        const sem = activeSemester === 'full' ? 's1' : activeSemester;
-        const b = calculateNeisBytes(subjectData[activeSubject]?.[sem]?.[ver] || '');
-        if (badge) badge.textContent = `${b.toLocaleString()}B`;
-        if (btn) {
-          btn.className = ver === activeVersion
-            ? "text-xs px-2.5 sm:px-3 py-1 rounded-xl font-black transition-all flex items-center gap-1 bg-blue-600 text-white shadow-2xs"
-            : "text-xs px-2.5 sm:px-3 py-1 rounded-xl font-bold transition-all flex items-center gap-1 bg-slate-100 text-slate-600 hover:bg-slate-200";
-        }
-      });
-    }
-
-    function switchVersion(ver) {
-      activeVersion = ver;
-      renderVersionTabs();
-      document.getElementById('seoteuk-textarea').value = getCurrentText();
-      updateNeisStats();
-      showToast(`[${ver.toUpperCase()}] 버전 전환`, "info");
-    }
-
-    function handleSeoteukInput() {
-      setCurrentText(document.getElementById('seoteuk-textarea').value);
-      updateNeisStats();
-    }
-
-    function toggleHighlightMode(show) {
-      isHighlightMode = show;
-      document.getElementById('editor-raw-container').classList.toggle('hidden', show);
-      document.getElementById('editor-highlight-container').classList.toggle('hidden', !show);
-      if (show) {
-        let t = getCurrentText()
-          .replace(/(탐구|분석|개념|원리|수식|모델링|규명|고찰|가설|검증|오차|수치)/g, '<span class="bg-emerald-100 text-emerald-900 font-bold px-1 rounded">$1</span>')
-          .replace(/(전공|진로|알고리즘|생명|공학|경영|심화|학술|원문|도서|지능|소프트웨어)/g, '<span class="bg-blue-100 text-blue-900 font-bold px-1 rounded">$1</span>')
-          .replace(/(협력|모둠|조율|나눔|배려|공유|소통|기여|경청|도운|팀원)/g, '<span class="bg-rose-100 text-rose-900 font-bold px-1 rounded">$1</span>');
-        document.getElementById('highlighted-display').innerHTML = t || '<span class="text-slate-400">작성된 내용이 없습니다.</span>';
+        lockBadge.innerHTML = "<span>⚠️</span> 황금비율 미달 (공동체 또는 정량 탐구 보강 필요)";
       }
     }
 
@@ -1555,7 +1176,7 @@
       setCurrentText(text);
       document.getElementById('seoteuk-textarea').value = text;
       updateNeisStats();
-      showToast("🧹 불필요한 주어('학생은')를 모두 제거했습니다.", "success");
+      showToast("🧹 주어('학생은')를 삭제했습니다.", "success");
     }
 
     function injectInquiryChainBuilder() {
@@ -1660,23 +1281,29 @@
       activeSubject = data.subject;
       renderSubjectDropdown();
       document.getElementById('input-career').value = data.career;
+      document.getElementById('input-major').value = data.career;
       setCurrentText(data.synthesis);
       document.getElementById('seoteuk-textarea').value = data.synthesis;
       updateNeisStats();
       showToast(`📚 [${key.toUpperCase()}] 바이블 매크로 주입 완료!`, "success");
+      if (document.getElementById('main-viewport-frame').classList.contains('device-mode-mobile')) {
+        currentMobileCardIndex = 0;
+        updateMobileCardView();
+      }
     }
 
     function generateCustomMacro() {
       const topic = document.getElementById('macro-topic').value.trim() || '교과 핵심 탐구';
-      const role = document.getElementById('macro-role').value;
-      const comp = document.getElementById('macro-competency').value;
       const car = document.getElementById('input-career').value.trim() || '전공 희망';
-
       const text = `'${topic}' 단원을 학습하며 ${car} 분야와 융합한 심화 탐구를 자발적으로 기획함. 관련 공식 학술 자료와 통계 데이터를 다각도로 교차 검토하여 현상에 대한 구조적 인과관계를 입체적으로 분석함. 탐구 과정에서 발생한 이론적 한계와 정량적 오차의 원인을 규명하기 위해 실험 변인을 체계적으로 재설계하고, 측정 데이터의 신뢰도를 확보하기 위한 반복 검증을 끈기 있게 전개함. 도출된 연구 성과를 학급 급우들에게 논리정연하게 설명하며 피드백을 유연하게 수용하는 성숙한 소통 역량을 증명함.`;
       setCurrentText(text);
       document.getElementById('seoteuk-textarea').value = text;
       triggerAIMaxByteFill();
       showToast("⚡ 맞춤형 세특 문단 조립 완료!", "success");
+      if (document.getElementById('main-viewport-frame').classList.contains('device-mode-mobile')) {
+        currentMobileCardIndex = 0;
+        updateMobileCardView();
+      }
     }
 
     async function sendChatMessage() {
@@ -1709,7 +1336,6 @@
         } catch (e) {}
       }
 
-      // 안티그래비티 패킷 로컬 합성 엔진
       setTimeout(() => {
         const text = `${activeSubject} 교과 시간에 학습한 핵심 학술 개념을 ${car} 분야의 시의성 있는 과제와 융합하여 주도적인 심화 탐구를 기획함. 특히 '${msg}' 활동에 착안하여 교과서 수준의 기본 이론에 머무르지 않고 관련 공식 학술 문헌과 통계 지표를 다각도로 교차 검토하여 현상에 대한 구조적 인과관계를 입체적으로 분석함. 탐구 수행 과정 중 나타난 이론적 한계와 정량적 오차의 원인을 규명하기 위해 실험 변인을 체계적으로 재설계하고, 측정 데이터의 신뢰도를 확보하기 위한 반복 검증을 끈기 있게 전개함. 도출된 연구 성과를 학급 급우들에게 논리정연하게 설명하며 다각도의 학술적 피드백을 유연하게 수용하는 성숙한 담화 소통 역량을 증명함. 배운 교과 지식을 실천적 문제 해결에 적극 투영하는 뛰어난 전공 적합성을 나타냄.`;
         appendChatMessage("ai", text);
@@ -1808,6 +1434,10 @@
       document.getElementById('ocrText').value = text;
       switchMainTab('interview');
       extractInterviewQuestionsFromOcr();
+      if (document.getElementById('main-viewport-frame').classList.contains('device-mode-mobile')) {
+        currentMobileCardIndex = 2;
+        updateMobileCardView();
+      }
     }
 
     async function ocrImage(e) {
@@ -1949,15 +1579,36 @@
       document.getElementById('interview-eval-comment').innerHTML = '• <b>강점</b>: 두괄식으로 핵심 주장을 제시하고 활동의 인과관계를 체계적으로 진술함.<br>• <b>보완점</b>: 정량적 실측 데이터(오차율 수치)와 자신의 구체적인 기여도를 조금 더 보강하면 사정관의 신뢰도를 극대화할 수 있습니다.';
     }
 
+    function generateCoordinatorPortfolio() {
+      document.getElementById('coord-result-card').classList.remove('hidden');
+      const major = document.getElementById('coord-major').value || "전공";
+      const book = document.getElementById('coord-book-title').value || "핵심 도서";
+      const notes = document.getElementById('coord-book-notes').value || "탐구 메모";
+      document.getElementById('coord-result-body').textContent = 
+        `[${major} 심화 기획안]\n1. 탐구 계기: ${book}에 제시된 이론적 의문을 교과 성취기준과 융합\n2. 사정관 평가 포인트: 단순 독후감이 아닌 수학적 수치 모델링과 결합하여 학업역량 40% 충족\n3. 후속 과제: 대학 권장 이수과목과 연계된 심화 프로젝트 확장`;
+      showToast("🧭 포트폴리오 기획안 생성 완료", "success");
+    }
+
+    function convertCoordinatorToSeoteuk() {
+      const text = document.getElementById('coord-result-body').textContent;
+      setCurrentText(text);
+      document.getElementById('seoteuk-textarea').value = text;
+      triggerAIMaxByteFill();
+      switchMainTab('editor');
+      showToast("🧭 포트폴리오가 에디터에 세특으로 반영되었습니다.", "success");
+    }
+
     function openComprehensiveReportModal() {
       const text = getCurrentText();
       const b = calculateNeisBytes(text);
       document.getElementById('report-date').textContent = new Date().toLocaleDateString('ko-KR');
       document.getElementById('report-category').textContent = activeCategory === '교과세특' ? `${activeCategory} (${activeSubject})` : activeCategory;
-      document.getElementById('report-career').textContent = document.getElementById('input-career').value || '전공 희망';
+      document.getElementById('report-career').textContent = document.getElementById('input-career').value || document.getElementById('coord-major').value || '전공 희망';
       document.getElementById('report-bytes').textContent = `${b.toLocaleString()} / 1,500 Byte`;
       document.getElementById('report-body-text').textContent = text || '작성된 세특 본문이 없습니다.';
-      document.getElementById('modal-report').classList.remove('hidden');
+      const m = document.getElementById('modal-report');
+      m.style.display = 'flex';
+      m.classList.remove('hidden');
     }
 
     function closeComprehensiveReportModal() {
@@ -1989,8 +1640,16 @@
       a.click();
     }
 
-    function openBatchReplaceModal() { document.getElementById('modal-replace').classList.remove('hidden'); }
-    function closeBatchReplaceModal() { document.getElementById('modal-replace').classList.add('hidden'); }
+    function openBatchReplaceModal() { 
+      const m = document.getElementById('modal-replace');
+      m.style.display = 'flex';
+      m.classList.remove('hidden');
+    }
+    function closeBatchReplaceModal() { 
+      const m = document.getElementById('modal-replace');
+      m.style.display = 'none';
+      m.classList.add('hidden');
+    }
     function executeBatchReplace() {
       const find = document.getElementById('replace-find').value;
       const target = document.getElementById('replace-target').value;
@@ -2004,8 +1663,16 @@
       showToast(`'${find}' 단어가 치환되었습니다.`, "success");
     }
 
-    function openAddSubjectModal() { document.getElementById('modal-add-subject').classList.remove('hidden'); }
-    function closeAddSubjectModal() { document.getElementById('modal-add-subject').classList.add('hidden'); }
+    function openAddSubjectModal() { 
+      const m = document.getElementById('modal-add-subject');
+      m.style.display = 'flex';
+      m.classList.remove('hidden');
+    }
+    function closeAddSubjectModal() { 
+      const m = document.getElementById('modal-add-subject');
+      m.style.display = 'none';
+      m.classList.add('hidden');
+    }
     function fillSubjectFromPreset(val) { if (val) document.getElementById('input-custom-subject-name').value = val; }
     function confirmAddSubject() {
       const name = document.getElementById('input-custom-subject-name').value.trim();
@@ -2057,5 +1724,804 @@
       setTimeout(() => { div.remove(); }, 3500);
     }
   </script>
+  <script>
+/* Seoteuk Mate WebApp runtime compatibility + PWA layer */
+(function () {
+  'use strict';
+
+  const STORAGE_KEY = 'seoteukMate.webapp.v1';
+  const SETTINGS_KEY = 'seoteukMate.settings.v1';
+
+  window.BYTE_LIMITS = window.BYTE_LIMITS || {
+    '교과세특': { s1: 1500, s2: 1500, full: 3000 },
+    '진로활동': { s1: 1500, s2: 1500, full: 3000 },
+    '자율활동': { s1: 1500, s2: 1500, full: 3000 },
+    '동아리활동': { s1: 1500, s2: 1500, full: 3000 }
+  };
+
+  window.FORBIDDEN_RULES = window.FORBIDDEN_RULES || [
+    { pattern: /\b(서울대|연세대|고려대|성균관대|한양대|포항공대|POSTECH|KAIST)\b/gi, reason: '특정 대학명은 학생부 기재 시 맥락에 따라 점검이 필요합니다.' },
+    { pattern: /(아버지|어머니|부모님|부친|모친).*?(교수|의사|변호사|공무원|대표|사장)/gi, reason: '가족의 사회·경제적 지위를 드러낼 수 있는 표현이 감지되었습니다.' },
+    { pattern: /(토익|TOEIC|토플|TOEFL|텝스|TEPS|아이엘츠|IELTS)/gi, reason: '공인어학시험 관련 표현은 기재 가능 여부를 확인해야 합니다.' }
+  ];
+
+  window.BIBLE_DATABASE = window.BIBLE_DATABASE || {
+    engineering: {
+      subject: '인공지능 수학', career: '컴퓨터공학',
+      synthesis: "인공지능 수학의 행렬 변환과 최적화 개념을 실제 데이터 처리 문제에 적용하며 알고리즘의 수렴 과정을 분석함. 학습률 변화에 따른 오차 양상을 표와 그래프로 비교하고, 반복 실험에서 발생한 편차의 원인을 데이터 전처리와 측정 조건에서 찾아 재검증함. 관련 학술 자료를 추가로 읽고 모델의 한계를 스스로 정리했으며, 모둠 토의에서 계산 과정을 설명하고 동료의 반례를 반영해 결론을 수정하는 태도가 돋보임."
+    },
+    medical: {
+      subject: '생명과학', career: '의생명과학',
+      synthesis: "생명과학 수업에서 유전자 발현과 환경 요인의 관계에 의문을 갖고 후성유전 조절 사례를 심화 탐구함. 서로 다른 연구 자료의 표본과 실험 조건을 비교하여 결과 차이의 원인을 분석하고, 상관관계와 인과관계를 구분해 해석함. 탐구 결과를 모둠원에게 설명하며 생명윤리 쟁점까지 토론 범위를 확장하고, 근거가 부족한 주장은 출처를 다시 확인하여 수정하는 신중한 태도를 보임."
+    },
+    arts: {
+      subject: '미술', career: '시각디자인',
+      synthesis: "미술 수업에서 색채 대비와 시선 유도 원리를 활용해 정보 전달용 시각물을 설계함. 동일한 메시지를 색상·여백·타이포그래피 조합별로 제작한 뒤 동료 반응을 비교하여 가독성과 주목도의 차이를 분석함. 결과를 바탕으로 디자인을 반복 수정하고, 표현 효과뿐 아니라 이용자 경험과 윤리적 설득의 경계까지 비판적으로 검토함."
+    },
+    humanities: {
+      subject: '문학', career: '인문학',
+      synthesis: "문학 작품의 서술 시점과 인물 인식의 차이에 주목하여 동일 사건이 화자에 따라 어떻게 달리 구성되는지 비교 분석함. 작품의 시대적 맥락과 다른 작품의 서사 전략을 함께 살펴 해석의 근거를 확장하고, 토론 과정에서 상반된 독해를 정리하여 자신의 해석을 수정·보완함. 텍스트 내부 근거를 중심으로 주장과 해석을 구분하는 태도가 돋보임."
+    },
+    social: {
+      subject: '사회·문화', career: '경영·사회과학',
+      synthesis: "사회·문화 수업에서 소비 선택에 영향을 주는 정보 제시 방식에 관심을 갖고 설문 문항을 직접 설계하여 응답 경향을 비교함. 표본 구성과 질문 순서가 결과에 미치는 영향을 점검하고, 단순 비율 비교에서 그치지 않고 편향 가능성을 함께 분석함. 모둠원과 문항 표현을 조정하며 조사 신뢰도를 높였고, 결과를 실제 사회 현상과 연결해 설명함."
+    },
+    natural: {
+      subject: '지구과학', career: '환경과학',
+      synthesis: "지구과학 수업에서 기후 자료의 장기 변동에 관심을 갖고 공개 자료를 활용해 연도별 추세를 비교함. 관측 지점과 기간에 따라 결과가 달라지는 점을 확인하고 자료 선택이 결론에 미치는 영향을 분석함. 탄소중립 정책 자료와 과학적 관측 결과를 구분하여 해석하고, 모둠 발표에서 불확실성의 범위를 함께 제시하는 태도가 돋보임."
+    }
+  };
+
+  window.BIBLE_TOPICS = window.BIBLE_TOPICS || [
+    { id:'b1', field:'공학', topic:'센서 오차와 수치 보정', keywords:'센서,오차,수치해석,모델링', book:'수치해석 기초 자료', text:'센서 측정값의 오차 원인을 탐색하고 반복 측정 결과를 비교하여 보정식을 설계함. 이론값과 실측값 차이를 수치로 제시하고 보정 전후 결과를 비교하여 모델의 타당성을 검토함.' },
+    { id:'b2', field:'의약·생명', topic:'후성유전과 환경', keywords:'유전자,후성유전,환경,윤리', book:'생명과학 심화 읽기', text:'환경 요인이 유전자 발현에 미치는 영향을 후성유전 사례를 통해 탐구함. 연구 자료의 표본과 조건을 비교하고 결과의 일반화 가능성을 비판적으로 검토함.' },
+    { id:'b3', field:'인문', topic:'서술자와 기억의 구성', keywords:'서술자,기억,관점,텍스트', book:'서사 이론 입문', text:'작품 속 동일 사건이 서술자의 관점에 따라 다르게 구성되는 양상을 비교함. 텍스트 내부 근거를 바탕으로 해석을 제시하고 상반된 독해를 토론하며 자신의 주장을 보완함.' },
+    { id:'b4', field:'사회·경영', topic:'설문과 선택 설계', keywords:'설문,편향,선택,행동경제', book:'행동경제학 입문', text:'정보 제시 방식에 따라 선택이 달라지는 현상을 설문으로 탐구함. 문항 순서와 표본 구성에 따른 편향 가능성을 분석하고 조사 결과의 한계를 함께 제시함.' },
+    { id:'b5', field:'자연·환경', topic:'기후 자료의 추세와 불확실성', keywords:'기후,자료,추세,불확실성', book:'기후 데이터 읽기', text:'장기 기후 자료를 비교해 추세를 파악하고 관측 지점과 기간에 따른 차이를 분석함. 자료 선택이 결론에 미치는 영향을 점검하고 불확실성까지 포함해 결과를 설명함.' },
+    { id:'b6', field:'예체능', topic:'시각 정보와 사용자 경험', keywords:'색채,타이포그래피,UX,디자인', book:'시각디자인 원리', text:'색채 대비와 타이포그래피가 정보 전달에 미치는 영향을 여러 시안으로 비교함. 동료 피드백을 반영해 가독성을 개선하고 디자인 선택의 근거를 설명함.' }
+  ];
+
+  window.activeCategory = window.activeCategory || '교과세특';
+  window.activeSemester = window.activeSemester || 's1';
+  window.activeVersion = window.activeVersion || 'v1';
+  window.activeSubject = window.activeSubject || '세계사';
+  window.subjectList = window.subjectList || ['국어','문학','독서','수학','영어','한국사','세계사','동아시아사','사회·문화','정치와 법','경제','통합사회','물리학','화학','생명과학','지구과학','인공지능 수학'];
+  window.subjectData = window.subjectData || {};
+  window.currentProvider = window.currentProvider || 'antigravity'; // web server proxy mode
+  window.savedApiKeys = window.savedApiKeys || { gemini:'', openai:'', claude:'', deepseek:'', custom:'' };
+  window.savedModels = window.savedModels || { gemini:'gemini-2.5-flash', openai:'', claude:'', deepseek:'', custom:'' };
+  window.currentMobileCardIndex = window.currentMobileCardIndex || 0;
+  window.interviewQuestions = window.interviewQuestions || [];
+  window.currentInterviewIndex = typeof window.currentInterviewIndex === 'number' ? window.currentInterviewIndex : -1;
+  window.interviewRecognition = window.interviewRecognition || null;
+  window.isInterviewRecording = window.isInterviewRecording || false;
+  window.interviewTimerInterval = window.interviewTimerInterval || null;
+  window.interviewSeconds = window.interviewSeconds || 0;
+  window.strictEvaluatorMode = window.strictEvaluatorMode || false;
+  window.bulkStudents = window.bulkStudents || [];
+  window.selectedBulkIndex = typeof window.selectedBulkIndex === 'number' ? window.selectedBulkIndex : -1;
+
+  function ensureSubjectShape(name) {
+    if (!window.subjectData[name]) window.subjectData[name] = {};
+    ['s1','s2','full'].forEach(sem => {
+      if (!window.subjectData[name][sem]) window.subjectData[name][sem] = {};
+      ['v1','v2','v3'].forEach(v => {
+        if (typeof window.subjectData[name][sem][v] !== 'string') window.subjectData[name][sem][v] = '';
+      });
+    });
+  }
+
+  window.subjectList.forEach(ensureSubjectShape);
+
+  window.calculateNeisBytes = function (text) {
+    let bytes = 0;
+    for (const ch of String(text || '')) bytes += ch.charCodeAt(0) > 127 ? 3 : 1;
+    return bytes;
+  };
+
+  window.getCurrentText = function () {
+    ensureSubjectShape(window.activeSubject);
+    return window.subjectData[window.activeSubject][window.activeSemester][window.activeVersion] || '';
+  };
+
+  window.setCurrentText = function (text) {
+    ensureSubjectShape(window.activeSubject);
+    window.subjectData[window.activeSubject][window.activeSemester][window.activeVersion] = String(text || '');
+    persistState();
+  };
+
+  function persistState() {
+    try {
+      const payload = {
+        activeCategory: window.activeCategory,
+        activeSemester: window.activeSemester,
+        activeVersion: window.activeVersion,
+        activeSubject: window.activeSubject,
+        subjectList: window.subjectList,
+        subjectData: window.subjectData,
+        bulkStudents: window.bulkStudents,
+        clientUpdatedAt: Date.now(),
+        schemaVersion: 2
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      window.__lastLocalState = payload;
+      if (!window.__cloudApplying && typeof window.__scheduleCloudSave === 'function') {
+        window.__scheduleCloudSave(payload);
+      }
+    } catch (_) {}
+  }
+
+  function restoreState() {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      if (s.activeCategory) window.activeCategory = s.activeCategory;
+      if (s.activeSemester) window.activeSemester = s.activeSemester;
+      if (s.activeVersion) window.activeVersion = s.activeVersion;
+      if (s.activeSubject) window.activeSubject = s.activeSubject;
+      if (Array.isArray(s.subjectList)) window.subjectList = s.subjectList;
+      if (s.subjectData && typeof s.subjectData === 'object') window.subjectData = s.subjectData;
+      if (Array.isArray(s.bulkStudents)) window.bulkStudents = s.bulkStudents;
+    } catch (_) {}
+    window.subjectList.forEach(ensureSubjectShape);
+
+    try {
+      const st = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+      if (st.provider) window.currentProvider = st.provider;
+      if (st.keys) Object.assign(window.savedApiKeys, st.keys);
+      if (st.models) Object.assign(window.savedModels, st.models);
+    } catch (_) {}
+  }
+
+  window.__getCloudState = function () {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      if (!s.schemaVersion) s.schemaVersion = 2;
+      if (!s.clientUpdatedAt) s.clientUpdatedAt = 0;
+      return s;
+    } catch (_) { return {}; }
+  };
+
+  window.__applyCloudState = function (s) {
+    if (!s || typeof s !== 'object') return false;
+    window.__cloudApplying = true;
+    try {
+      if (s.activeCategory) window.activeCategory = s.activeCategory;
+      if (s.activeSemester) window.activeSemester = s.activeSemester;
+      if (s.activeVersion) window.activeVersion = s.activeVersion;
+      if (s.activeSubject) window.activeSubject = s.activeSubject;
+      if (Array.isArray(s.subjectList) && s.subjectList.length) window.subjectList = s.subjectList;
+      if (s.subjectData && typeof s.subjectData === 'object') window.subjectData = s.subjectData;
+      if (Array.isArray(s.bulkStudents)) window.bulkStudents = s.bulkStudents;
+      window.subjectList.forEach(ensureSubjectShape);
+      const normalized = Object.assign({}, s, { schemaVersion: 2 });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      window.__lastLocalState = normalized;
+      renderSubjectDropdown();
+      renderCategoryButtons();
+      syncEditorFromState();
+      renderBulkList();
+      window.switchSemester(window.activeSemester);
+      window.switchVersion(window.activeVersion);
+      return true;
+    } catch (_) { return false; }
+    finally { window.__cloudApplying = false; }
+  };
+
+  function esc(str) {
+    return String(str ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  }
+
+  window.renderSubjectDropdown = function () {
+    const el = document.getElementById('subject-select');
+    if (!el) return;
+    el.innerHTML = window.subjectList.map(s => `<option value="${esc(s)}" ${s===window.activeSubject?'selected':''}>${esc(s)}</option>`).join('');
+  };
+
+  window.handleSubjectChange = function (name) {
+    if (!name) return;
+    window.activeSubject = name;
+    ensureSubjectShape(name);
+    renderSubjectDropdown();
+    syncEditorFromState();
+    persistState();
+  };
+
+  window.switchSemester = function (sem) {
+    if (!['s1','s2','full'].includes(sem)) return;
+    window.activeSemester = sem;
+    ['s1','s2','full'].forEach(s => {
+      const b = document.getElementById('btn-sem-'+s);
+      if (!b) return;
+      b.className = s===sem
+        ? 'text-xs px-2.5 py-0.8 rounded-lg font-black transition-all bg-white text-blue-700 shadow-2xs'
+        : 'text-xs px-2.5 py-0.8 rounded-lg font-bold transition-all text-slate-600 hover:text-slate-900';
+    });
+    const lbl = document.getElementById('label-target-semester');
+    if (lbl) lbl.textContent = sem === 's1' ? '1학기 NEIS 바이트:' : sem === 's2' ? '2학기 NEIS 바이트:' : '1년 합산 바이트:';
+    syncEditorFromState();
+    persistState();
+  };
+
+  window.switchVersion = function (ver) {
+    if (!['v1','v2','v3'].includes(ver)) return;
+    window.activeVersion = ver;
+    ['v1','v2','v3'].forEach(v => {
+      const b = document.getElementById('btn-ver-'+v);
+      const badge = document.getElementById('ver-badge-'+v);
+      if (!b) return;
+      b.className = v===ver
+        ? 'text-xs px-2.5 sm:px-3 py-1 rounded-xl font-black transition-all flex items-center gap-1 bg-blue-600 text-white shadow-2xs'
+        : 'text-xs px-2.5 sm:px-3 py-1 rounded-xl font-bold transition-all flex items-center gap-1 bg-slate-100 text-slate-600 hover:bg-slate-200';
+      if (badge) badge.className = v===ver ? 'text-[10px] bg-white/20 px-1 py-0.2 rounded-full font-bold' : 'text-[10px] bg-slate-200 px-1 py-0.2 rounded-full font-bold';
+    });
+    syncEditorFromState();
+    persistState();
+  };
+
+  window.handleSeoteukInput = function () {
+    const ta = document.getElementById('seoteuk-textarea');
+    window.setCurrentText(ta ? ta.value : '');
+    if (typeof window.updateNeisStats === 'function') window.updateNeisStats();
+  };
+
+  function syncEditorFromState() {
+    const ta = document.getElementById('seoteuk-textarea');
+    if (ta) ta.value = window.getCurrentText();
+    ['v1','v2','v3'].forEach(v => {
+      ensureSubjectShape(window.activeSubject);
+      const t = window.subjectData[window.activeSubject][window.activeSemester][v] || '';
+      const badge = document.getElementById('ver-badge-'+v);
+      if (badge) badge.textContent = `${window.calculateNeisBytes(t).toLocaleString()}B`;
+    });
+    if (typeof window.updateNeisStats === 'function') window.updateNeisStats();
+  }
+
+  function renderCategoryButtons() {
+    const c = document.getElementById('category-button-group');
+    if (!c) return;
+    const cats = ['교과세특','진로활동','자율활동','동아리활동'];
+    c.innerHTML = cats.map(cat => `<button type="button" data-cat="${cat}" class="text-[11px] px-2.5 py-1 rounded-lg font-bold border transition ${cat===window.activeCategory?'bg-blue-600 text-white border-blue-600':'bg-white text-slate-600 border-slate-200'}">${cat}</button>`).join('');
+    c.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      window.activeCategory = b.dataset.cat;
+      renderCategoryButtons();
+      if (typeof window.updateNeisStats === 'function') window.updateNeisStats();
+      persistState();
+    }));
+  }
+
+  window.switchMainTab = function (tab) {
+    ['editor','coordinator','interview','bulk'].forEach(t => {
+      const content = document.getElementById('tab-content-'+t);
+      const btn = document.getElementById('tab-btn-'+t);
+      if (content) content.classList.toggle('hidden', t !== tab);
+      if (btn) btn.className = `tab-indicator pb-2 px-2 sm:px-3 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1 ${t===tab?'border-blue-600 text-blue-600':'border-transparent text-slate-500 hover:text-slate-800'}`;
+    });
+    if (tab === 'interview' && !window.interviewRecognition && typeof window.initSpeechRecognition === 'function') window.initSpeechRecognition();
+  };
+
+  window.switchLeftPanel = function (tab) {
+    const chat = document.getElementById('view-chat');
+    const macro = document.getElementById('view-macro');
+    if (chat) chat.classList.toggle('hidden', tab !== 'chat');
+    if (macro) macro.classList.toggle('hidden', tab !== 'macro');
+    ['chat','macro'].forEach(t => {
+      const b = document.getElementById('left-tab-'+t);
+      if (b) b.className = `flex-1 py-1.5 rounded-md text-center transition-all ${t===tab?'bg-white text-blue-700 shadow-xs':'text-slate-500 hover:text-slate-800'}`;
+    });
+  };
+
+  window.setDeviceView = function (mode) {
+    const frame = document.getElementById('main-viewport-frame');
+    if (!frame) return;
+    ['desktop','tablet','mobile'].forEach(m => frame.classList.remove('device-mode-'+m));
+    frame.classList.add('device-mode-'+mode);
+    ['desktop','tablet','mobile'].forEach(m => {
+      const b = document.getElementById('btn-device-'+m);
+      if (b) b.className = `px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${m===mode?'bg-white text-blue-700 shadow-xs font-black':'text-slate-600 hover:text-slate-900'}`;
+    });
+    const mh = document.getElementById('mobile-card-header');
+    if (mh) {
+      mh.classList.toggle('hidden', mode !== 'mobile');
+      mh.classList.toggle('flex', mode === 'mobile');
+    }
+    if (mode === 'mobile') {
+      window.currentMobileCardIndex = 0;
+      window.updateMobileCardView();
+    } else {
+      const left = document.getElementById('panel-left');
+      const right = document.getElementById('panel-right');
+      if (left) { left.style.display=''; left.classList.add('md:flex'); left.classList.remove('flex'); }
+      if (right) right.style.display='';
+    }
+  };
+
+  window.updateMobileCardView = function () {
+    const idx = Math.max(0, Math.min(2, Number(window.currentMobileCardIndex)||0));
+    window.currentMobileCardIndex = idx;
+    const left = document.getElementById('panel-left');
+    const right = document.getElementById('panel-right');
+    if (left && right) {
+      if (idx === 1) {
+        left.style.display='flex'; left.classList.add('flex'); left.classList.remove('hidden');
+        right.style.display='none';
+      } else {
+        left.style.display='none';
+        right.style.display='flex';
+        window.switchMainTab(idx === 2 ? 'interview' : 'editor');
+      }
+    }
+    const titles = ['카드 1/3: 에디터','카드 2/3: AI 조교','카드 3/3: 구술면접'];
+    const title = document.getElementById('mobile-card-title');
+    if (title) title.textContent = titles[idx];
+    [0,1,2].forEach(i => {
+      const d = document.getElementById('mDot-'+i);
+      if (d) d.className = `w-2 h-2 rounded-full ${i===idx?'bg-blue-600':'bg-slate-300'}`;
+    });
+  };
+  window.prevMobileCard = () => { window.currentMobileCardIndex = (window.currentMobileCardIndex + 2) % 3; window.updateMobileCardView(); };
+  window.nextMobileCard = () => { window.currentMobileCardIndex = (window.currentMobileCardIndex + 1) % 3; window.updateMobileCardView(); };
+
+  window.toggleHighlightMode = function (highlight) {
+    const raw = document.getElementById('editor-raw-container');
+    const hi = document.getElementById('editor-highlight-container');
+    if (raw) raw.classList.toggle('hidden', !!highlight);
+    if (hi) hi.classList.toggle('hidden', !highlight);
+    const br = document.getElementById('btn-mode-raw');
+    const bh = document.getElementById('btn-mode-highlight');
+    if (br) br.className = `font-bold px-2 py-0.8 rounded-md ${!highlight?'bg-white text-blue-600 shadow-2xs border border-slate-200':'text-slate-500 hover:text-slate-800'}`;
+    if (bh) bh.className = `font-bold px-2 py-0.8 rounded-md ${highlight?'bg-white text-blue-600 shadow-2xs border border-slate-200':'text-slate-500 hover:text-slate-800'}`;
+    if (highlight) {
+      const el = document.getElementById('highlighted-display');
+      if (el) {
+        let html = esc(window.getCurrentText());
+        html = html.replace(/(탐구|분석|가설|검증|오차|수치|모델링)/g,'<mark class="bg-emerald-100 text-emerald-900 rounded px-0.5">$1</mark>')
+                   .replace(/(진로|전공|심화|학술|도서|원문)/g,'<mark class="bg-blue-100 text-blue-900 rounded px-0.5">$1</mark>')
+                   .replace(/(협력|소통|기여|배려|경청|모둠)/g,'<mark class="bg-rose-100 text-rose-900 rounded px-0.5">$1</mark>');
+        el.innerHTML = html;
+      }
+    }
+  };
+
+  window.cloneCurrentVersionToOther = function () {
+    const from = window.getCurrentText();
+    const target = window.activeVersion === 'v1' ? 'v2' : 'v1';
+    ensureSubjectShape(window.activeSubject);
+    window.subjectData[window.activeSubject][window.activeSemester][target] = from;
+    persistState();
+    syncEditorFromState();
+    if (typeof window.showToast === 'function') window.showToast(`${window.activeVersion.toUpperCase()} 내용을 ${target.toUpperCase()}로 복제했습니다.`, 'success');
+  };
+
+  window.compareVersionsModal = function () {
+    ensureSubjectShape(window.activeSubject);
+    const v1 = window.subjectData[window.activeSubject][window.activeSemester].v1 || '';
+    const v2 = window.subjectData[window.activeSubject][window.activeSemester].v2 || '';
+    const t1 = document.getElementById('compare-text-v1');
+    const t2 = document.getElementById('compare-text-v2');
+    if (t1) t1.textContent = v1 || '(비어 있음)';
+    if (t2) t2.textContent = v2 || '(비어 있음)';
+    const b1 = document.getElementById('compare-bytes-v1');
+    const b2 = document.getElementById('compare-bytes-v2');
+    if (b1) b1.textContent = `${window.calculateNeisBytes(v1)} Byte`;
+    if (b2) b2.textContent = `${window.calculateNeisBytes(v2)} Byte`;
+    const m = document.getElementById('modal-compare-versions');
+    if (m) m.classList.remove('hidden');
+  };
+  window.closeCompareVersionsModal = () => document.getElementById('modal-compare-versions')?.classList.add('hidden');
+  window.adoptVersion = function (v) { window.switchVersion(v); window.closeCompareVersionsModal(); };
+
+  window.playGoogleCloudTTS = function () {
+    if (!('speechSynthesis' in window) || typeof window.SpeechSynthesisUtterance !== 'function') return typeof window.showToast==='function' && window.showToast('이 브라우저에서는 음성 낭독을 지원하지 않습니다.','warning');
+    const text = window.getCurrentText();
+    if (!text.trim()) return typeof window.showToast==='function' && window.showToast('낭독할 본문이 없습니다.','warning');
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang='ko-KR'; u.rate=0.95;
+    speechSynthesis.speak(u);
+  };
+
+  window.toggleStrictEvaluatorMode = function () {
+    window.strictEvaluatorMode = !window.strictEvaluatorMode;
+    const label = document.getElementById('eval-mode-label');
+    const icon = document.getElementById('eval-mode-icon');
+    const banner = document.getElementById('banner-mode-text');
+    const bicon = document.getElementById('banner-mode-icon');
+    if (label) label.textContent = window.strictEvaluatorMode ? '냉혹 사정관 ON' : '냉혹 사정관';
+    if (icon) icon.textContent = window.strictEvaluatorMode ? '🔥' : '🧊';
+    if (banner) banner.textContent = window.strictEvaluatorMode ? '엄격 진단 모드 (근거·구체성·과장 여부 집중)' : '친절 지도 모드 (성장 및 인과관계 중심)';
+    if (bicon) bicon.textContent = window.strictEvaluatorMode ? '🧊' : '💡';
+  };
+
+  window.appendChatMessage = function (sender, text) {
+    const c = document.getElementById('chat-messages');
+    if (!c) return;
+    const outer = document.createElement('div');
+    outer.className = `flex justify-${sender === 'user' ? 'end' : 'start'}`;
+    const bubble = document.createElement('div');
+    bubble.className = `max-w-[94%] p-3 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${sender === 'user' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-800 shadow-2xs'}`;
+    bubble.textContent = text;
+    outer.appendChild(bubble); c.appendChild(outer); c.scrollTop = c.scrollHeight;
+  };
+
+  async function callServerAI(payload) {
+    const r = await fetch('/api/ai', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const data = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(data.error || `AI API ${r.status}`);
+    return data.text || '';
+  }
+
+  async function callDirectGemini(prompt, image) {
+    const key = window.savedApiKeys.gemini;
+    const model = window.savedModels.gemini || 'gemini-2.5-flash';
+    if (!key) throw new Error('Gemini API 키가 없습니다.');
+    const parts = [{text:prompt}];
+    if (image) parts.push({inline_data:{mime_type:image.mimeType,data:image.data}});
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts}]})
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error?.message || `Gemini ${r.status}`);
+    return data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('\n').trim() || '';
+  }
+
+  async function requestAI(prompt, image) {
+    if (window.currentProvider === 'gemini') return callDirectGemini(prompt, image);
+    return callServerAI({ prompt, image, mode: window.strictEvaluatorMode ? 'strict' : 'coach' });
+  }
+
+  function fallbackSeoteuk(msg, career, subject) {
+    return `${subject} 수업에서 '${msg}'에 관심을 갖고 관련 개념을 스스로 확장하여 탐구함. ${career} 분야와 연결되는 실제 사례와 자료를 비교하며 핵심 변인을 정리하고, 자료 간 차이가 발생한 원인을 조건과 방법의 차이에서 찾아 설명함. 탐구 과정에서 단순한 결과 제시에 그치지 않고 근거의 신뢰도와 해석의 한계를 점검했으며, 모둠 토의에서 자신의 분석 과정을 공유하고 동료의 질문을 반영해 결론을 보완함.`;
+  }
+
+  window.sendChatMessage = async function () {
+    const input = document.getElementById('input-chat');
+    const msg = input?.value.trim();
+    if (!msg) return;
+    const career = document.getElementById('input-career')?.value.trim() || '희망 전공';
+    window.appendChatMessage('user', msg);
+    input.value='';
+    const prompt = `고등학교 교사가 학교생활기록부 세부능력 및 특기사항 초안을 작성하려 한다. 과목은 ${window.activeSubject}, 희망 진로는 ${career}, 실제 관찰 기록은 다음과 같다: ${msg}\n관찰 기록에 없는 수치·도서·활동을 새로 만들어내지 말고, 근거가 부족한 내용은 과장하지 않는다. 한국어 개조식 종결형(~함, ~보임 등)으로 자연스럽게 작성하고 1,500바이트를 넘기지 않는다. 결과 본문만 출력한다.`;
+    try {
+      const txt = await requestAI(prompt);
+      window.appendChatMessage('assistant', txt || fallbackSeoteuk(msg, career, window.activeSubject));
+      if (txt) {
+        window.setCurrentText(txt);
+        const ta = document.getElementById('seoteuk-textarea'); if (ta) ta.value=txt;
+        if (typeof window.updateNeisStats==='function') window.updateNeisStats();
+      }
+    } catch (e) {
+      const fb = fallbackSeoteuk(msg, career, window.activeSubject);
+      window.appendChatMessage('assistant', `서버 AI 연결이 되지 않아 로컬 초안으로 작성했습니다.\n\n${fb}`);
+      window.setCurrentText(fb);
+      const ta = document.getElementById('seoteuk-textarea'); if (ta) ta.value=fb;
+      if (typeof window.updateNeisStats==='function') window.updateNeisStats();
+    }
+  };
+
+  window.handlePdfUpload = async function (event) {
+    const file = event.target.files?.[0];
+    if (!window.pdfjsLib) { if (typeof window.showToast==='function') window.showToast('PDF 모듈을 불러오지 못했습니다. 인터넷 연결 후 다시 시도하세요.','warning'); event.target.value=''; return; }
+    if (!file) return;
+    try {
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+      let text='';
+      for (let i=1;i<=pdf.numPages;i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(x=>x.str).join(' ') + '\n';
+      }
+      text=text.trim();
+      if (!text) throw new Error('텍스트가 없는 스캔형 PDF입니다.');
+      const ocr = document.getElementById('ocrText');
+      if (ocr) ocr.value=text;
+      window.switchMainTab('interview');
+      if (typeof window.showToast==='function') window.showToast(`PDF ${pdf.numPages}쪽 텍스트를 면접 분석칸에 주입했습니다.`, 'success');
+    } catch (e) {
+      if (typeof window.showToast==='function') window.showToast('PDF가 스캔 이미지형이면 사진 OCR 기능을 사용하세요.', 'warning');
+    } finally { event.target.value=''; }
+  };
+
+  window.ocrImage = async function (event) {
+    const file=event.target.files?.[0]; if (!file) return;
+    const reader=new FileReader();
+    reader.onload=async () => {
+      const dataUrl=String(reader.result||'');
+      const data=dataUrl.split(',')[1]||'';
+      try {
+        const text=await requestAI('이 이미지는 학교생활기록부 또는 학생 활동 기록이다. 이미지에서 보이는 한국어 텍스트를 가능한 한 원문 순서대로 정확히 추출한다. 추측해서 채우지 말고 판독되지 않는 부분은 [판독불가]로 표시한다. 추출 텍스트만 출력한다.', {mimeType:file.type||'image/jpeg', data});
+        const out=document.getElementById('ocrText'); if(out) out.value=text;
+        if (typeof window.showToast==='function') window.showToast('이미지 OCR이 완료되었습니다.','success');
+      } catch (e) {
+        if (typeof window.showToast==='function') window.showToast('OCR 서버 연결을 확인하세요.','warning');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const originalExtract = window.extractInterviewQuestionsFromOcr;
+  window.extractInterviewQuestionsFromOcr = async function () {
+    const text=document.getElementById('ocrText')?.value.trim();
+    if (!text) return typeof window.showToast==='function' && window.showToast('먼저 세특 또는 OCR 텍스트를 넣어 주세요.','warning');
+    try {
+      const prompt=`다음 학교생활기록부 내용을 바탕으로 실제 대학 면접에서 확인할 수 있는 꼬리질문 5개를 만들어라. 기록에 없는 사실을 전제하지 말고, 각 질문은 활동의 동기·방법·근거·한계·후속 탐구를 확인하도록 구성한다. 반드시 JSON 배열만 출력한다. 형식: [{"q":"질문","star":"상황-과제-행동-결과 순서의 답변 가이드"}]\n\n기록:\n${text}`;
+      const raw=await requestAI(prompt);
+      const cleaned=raw.replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+      const parsed=JSON.parse(cleaned);
+      if (!Array.isArray(parsed) || !parsed.length) throw new Error('invalid');
+      window.interviewQuestions=parsed.slice(0,5).map(x=>({q:String(x.q||''),star:String(x.star||'핵심 근거와 본인의 역할을 구체적으로 설명하세요.')}));
+      window.currentInterviewIndex=-1;
+      if (typeof window.renderInterviewQuestionList==='function') window.renderInterviewQuestionList();
+    } catch (e) {
+      if (typeof originalExtract === 'function') return originalExtract();
+    }
+  };
+
+  window.evaluateInterviewAnswer = async function () {
+    const ans=document.getElementById('live-student-answer-input')?.value.trim();
+    if (!ans) return alert('수험생 답변이 비어 있습니다.');
+    const q=window.interviewQuestions?.[window.currentInterviewIndex]?.q || document.getElementById('live-question-display')?.textContent || '';
+    const panel=document.getElementById('interview-eval-panel'); if(panel) panel.classList.remove('hidden');
+    const score=document.getElementById('interview-eval-score'); if(score) score.textContent='분석 중…';
+    try {
+      const prompt=`면접 질문: ${q}\n수험생 답변: ${ans}\n답변을 내용의 구체성, 질문 적합성, 근거 제시, 자기 역할 설명, 성찰과 한계 인식 관점에서 평가한다. 점수는 100점 만점 정수로 제시하고, 강점 2개와 보완점 2개를 짧게 쓴다. 과장된 단정은 피한다. 첫 줄 형식은 SCORE: 00 이어야 한다.`;
+      const txt=await requestAI(prompt);
+      const m=txt.match(/SCORE:\s*(\d{1,3})/i); const n=m?Math.min(100,Number(m[1])):null;
+      if(score) score.textContent=n!==null?`${n}점 / 100점`:'AI 진단';
+      const c=document.getElementById('interview-eval-comment'); if(c) c.textContent=txt.replace(/SCORE:\s*\d{1,3}/i,'').trim();
+    } catch(e) {
+      if(score) score.textContent='로컬 진단';
+      const c=document.getElementById('interview-eval-comment'); if(c) c.textContent='답변의 핵심 주장을 먼저 제시하고, 자신의 구체적인 역할과 실제 근거를 한 가지 이상 붙이면 설득력이 높아집니다. 기록에 없는 수치나 성과는 새로 만들지 않는 것이 좋습니다.';
+    }
+  };
+
+  window.openApiKeyModal = function () { document.getElementById('modal-apikey')?.classList.remove('hidden'); syncProviderUI(); };
+  window.closeApiKeyModal = function () { document.getElementById('modal-apikey')?.classList.add('hidden'); };
+  window.selectLlmProvider = function (provider) {
+    if (!['antigravity','gemini'].includes(provider)) {
+      if (typeof window.showToast==='function') window.showToast('v1.1에서는 서버 AI와 Gemini 직접 연결만 지원합니다. 다른 공급자는 v2 서버 연결에서 제공합니다.','warning');
+      return;
+    }
+    window.currentProvider=provider; syncProviderUI();
+  };
+
+  function syncProviderUI() {
+    const map={antigravity:'서버 AI',gemini:'Gemini 직접',openai:'OpenAI 직접',claude:'Claude',deepseek:'DeepSeek',custom:'Custom'};
+    ['antigravity','gemini','openai','claude','deepseek','custom'].forEach(p=>{
+      const b=document.getElementById('provider-btn-'+p); if(!b) return;
+      if (!['antigravity','gemini'].includes(p)) { b.style.display='none'; return; } else { b.style.display=''; }
+      b.className=`p-2 rounded-xl border text-center transition-all text-[11px] ${p===window.currentProvider?'bg-blue-600 text-white border-blue-700 font-black shadow-xs':'bg-slate-50 border-slate-200 text-slate-600'}`;
+      if(p==='antigravity') b.textContent='🔐 서버 AI';
+    });
+    const wrap=document.getElementById('wrapper-api-key'); if(wrap) wrap.classList.toggle('hidden',window.currentProvider==='antigravity');
+    const model=document.getElementById('input-llm-model'); if(model) model.value=window.savedModels[window.currentProvider] || (window.currentProvider==='antigravity'?'서버에서 관리':'');
+    const key=document.getElementById('input-llm-api-key'); if(key) key.value=window.savedApiKeys[window.currentProvider]||'';
+    const name=document.getElementById('header-ai-name'); if(name) name.textContent=window.currentProvider==='antigravity'?'🔐 서버 AI':map[window.currentProvider]||window.currentProvider;
+    const badge=document.getElementById('ai-status-badge'); if(badge){ badge.textContent=window.currentProvider==='antigravity'?'🔐 서버 AI 모드':'⚠️ 브라우저 직접 API 모드'; badge.classList.remove('hidden'); }
+    const mn=document.getElementById('modal-status-engine-name'); if(mn) mn.textContent=window.currentProvider==='antigravity'?'🔐 서버 AI 프록시 모드':`${map[window.currentProvider]||window.currentProvider} 모드`;
+    const md=document.getElementById('modal-status-engine-desc'); if(md) md.textContent=window.currentProvider==='antigravity'?'API 키를 서버 환경변수에서 관리하여 브라우저에 노출하지 않습니다.':'테스트용 직접 연결입니다. 공개 배포에서는 서버 AI 모드를 권장합니다.';
+  }
+
+  window.handleApiKeyInputChange = function () {
+    const k=document.getElementById('input-llm-api-key')?.value||'';
+    const ind=document.getElementById('key-registered-indicator'); if(ind) ind.textContent=k?'키 입력됨':'등록된 키 없음';
+  };
+  window.toggleApiKeyVisibility = function () { const i=document.getElementById('input-llm-api-key'); if(i) i.type=i.type==='password'?'text':'password'; };
+  window.saveLlmSettings = function () {
+    const key=document.getElementById('input-llm-api-key')?.value.trim()||'';
+    const model=document.getElementById('input-llm-model')?.value.trim()||'';
+    if(window.currentProvider!=='antigravity') window.savedApiKeys[window.currentProvider]=key;
+    if(model && window.currentProvider!=='antigravity') window.savedModels[window.currentProvider]=model;
+    try{localStorage.setItem(SETTINGS_KEY,JSON.stringify({provider:window.currentProvider,keys:window.savedApiKeys,models:window.savedModels}));}catch(_){}
+    window.closeApiKeyModal(); if(typeof window.showToast==='function') window.showToast('AI 연결 설정을 저장했습니다.','success');
+  };
+  window.testCurrentApiKeyConnection = async function () {
+    const box=document.getElementById('api-test-result-box'); if(box){box.classList.remove('hidden');box.textContent='연결 확인 중…';}
+    try {
+      if(window.currentProvider!=='antigravity') {
+        const k=document.getElementById('input-llm-api-key')?.value.trim()||''; if(k) window.savedApiKeys[window.currentProvider]=k;
+        const m=document.getElementById('input-llm-model')?.value.trim()||''; if(m) window.savedModels[window.currentProvider]=m;
+      }
+      const t=await requestAI('연결 테스트입니다. 반드시 OK 두 글자만 답하세요.');
+      if(box){box.className='p-2.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200';box.textContent=`연결 성공: ${t.slice(0,40)}`;}
+    } catch(e){ if(box){box.className='p-2.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200';box.textContent=`연결 실패: ${e.message}`;} }
+  };
+  window.resetToAntigravityMode = function () { window.currentProvider='antigravity'; syncProviderUI(); };
+  window.launchAndConnectAntiGravity = function () { window.currentProvider='antigravity'; window.openApiKeyModal(); };
+  window.closeAntiGravityDockModal = () => document.getElementById('modal-antigravity-dock')?.classList.add('hidden');
+  window.triggerNativeAntiGravityApp = () => window.openApiKeyModal();
+  window.copyAntiGravityAgentPrompt = function(){ const e=document.getElementById('antigravity-prompt-snippet'); if(!e) return; const text=e.value||''; if(navigator.clipboard?.writeText){navigator.clipboard.writeText(text).catch(()=>{});} else { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(_){} ta.remove(); } if(typeof window.showToast==='function') window.showToast('서버 AI 설정 안내를 복사했습니다.','success'); };
+
+  function normalizeBulkRow(row, idx) {
+    const get=(...names)=>{for(const n of names){ if(row[n]!==undefined && row[n]!==null) return String(row[n]).trim(); } return '';};
+    return {
+      no:get('학번','번호','No','no') || String(idx+1),
+      name:get('이름','성명','학생명','name') || `학생${idx+1}`,
+      observation:get('관찰기록','활동내용','수업관찰','관찰','메모','내용'),
+      career:get('희망진로','진로','희망학과','전공'),
+      result:get('결과','세특','생성결과')
+    };
+  }
+
+  window.downloadSampleExcel = function () {
+    if (!window.XLSX) return typeof window.showToast==='function' && window.showToast('엑셀 모듈을 불러오지 못했습니다. 인터넷 연결 후 다시 시도하세요.','warning');
+    const rows=[
+      {학번:'20101',이름:'홍길동',관찰기록:'수업 토론에서 사료의 관점을 비교하고 근거를 들어 반론함',희망진로:'역사학',결과:''},
+      {학번:'20102',이름:'김하늘',관찰기록:'통계 자료를 그래프로 바꾸어 변화 원인을 설명함',희망진로:'데이터과학',결과:''}
+    ];
+    const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'학생명단'); XLSX.writeFile(wb,'SeoteukMate_샘플.xlsx');
+  };
+
+  window.handleExcelUpload = async function (event) {
+    const file=event.target.files?.[0]; if(!file) return;
+    if (!window.XLSX) { if (typeof window.showToast==='function') window.showToast('엑셀 모듈을 불러오지 못했습니다. 인터넷 연결 후 다시 시도하세요.','warning'); event.target.value=''; return; }
+    try {
+      const data=new Uint8Array(await file.arrayBuffer());
+      const wb=XLSX.read(data,{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      window.bulkStudents=rows.map(normalizeBulkRow); window.selectedBulkIndex=window.bulkStudents.length?0:-1;
+      renderBulkList(); persistState();
+      if(typeof window.showToast==='function') window.showToast(`${window.bulkStudents.length}명의 학생을 불러왔습니다.`,'success');
+    } catch(e){ if(typeof window.showToast==='function') window.showToast('엑셀 형식을 확인하세요.','warning'); }
+    finally{event.target.value='';}
+  };
+
+  function renderBulkList() {
+    const c=document.getElementById('bulk-student-list'); const count=document.getElementById('bulk-count');
+    if(count) count.textContent=window.bulkStudents.length;
+    if(!c) return;
+    if(!window.bulkStudents.length){ c.innerHTML='<div class="p-6 text-center text-slate-400 text-xs">엑셀을 업로드하거나 학생을 추가하세요.</div>'; selectBulk(-1); return; }
+    c.innerHTML='';
+    window.bulkStudents.forEach((s,i)=>{
+      const b=document.createElement('button'); b.type='button'; b.className=`w-full text-left p-2.5 text-xs hover:bg-blue-50 ${i===window.selectedBulkIndex?'bg-blue-50 text-blue-900':'text-slate-700'}`;
+      b.innerHTML=`<div class="font-black">${esc(s.no)} · ${esc(s.name)}</div><div class="text-[10px] text-slate-500 mt-0.5 truncate">${esc(s.result||s.observation||'기록 없음')}</div>`;
+      b.addEventListener('click',()=>selectBulk(i)); c.appendChild(b);
+    });
+    selectBulk(Math.max(0,Math.min(window.selectedBulkIndex,window.bulkStudents.length-1)),false);
+  }
+
+  function selectBulk(i,rerender=true){
+    window.selectedBulkIndex=i;
+    const h=document.getElementById('detail-student-header'); const ta=document.getElementById('bulk-detail-textarea'); const by=document.getElementById('detail-student-bytes');
+    if(i<0 || !window.bulkStudents[i]){ if(h)h.textContent='학생 선택'; if(ta)ta.value=''; if(by)by.textContent='0 Byte'; return; }
+    const s=window.bulkStudents[i]; if(h)h.textContent=`${s.no} ${s.name}`; if(ta)ta.value=s.result||''; if(by)by.textContent=`${window.calculateNeisBytes(s.result||'')} Byte`;
+    if(rerender) renderBulkList();
+  }
+
+  window.handleBulkDetailInput = function(){ const i=window.selectedBulkIndex; if(i<0||!window.bulkStudents[i])return; const ta=document.getElementById('bulk-detail-textarea'); window.bulkStudents[i].result=ta?.value||''; const by=document.getElementById('detail-student-bytes'); if(by)by.textContent=`${window.calculateNeisBytes(window.bulkStudents[i].result)} Byte`; persistState(); };
+  window.clearBulkList = function(){ window.bulkStudents=[]; window.selectedBulkIndex=-1; renderBulkList(); persistState(); };
+  window.exportBulkToExcel = function(){
+    if (!window.XLSX) return typeof window.showToast==='function' && window.showToast('엑셀 모듈을 불러오지 못했습니다. 인터넷 연결 후 다시 시도하세요.','warning');
+    if(!window.bulkStudents.length) return typeof window.showToast==='function' && window.showToast('내보낼 학생이 없습니다.','warning');
+    const rows=window.bulkStudents.map(s=>({학번:s.no,이름:s.name,관찰기록:s.observation,희망진로:s.career,결과:s.result})); const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'생성결과'); XLSX.writeFile(wb,'SeoteukMate_일괄결과.xlsx');
+  };
+
+  window.startBulkBatchProcess = async function(){
+    if(!window.bulkStudents.length) return typeof window.showToast==='function' && window.showToast('먼저 엑셀을 업로드하세요.','warning');
+    const btn=document.getElementById('btn-start-bulk'); if(btn){btn.disabled=true;btn.textContent='생성 중…';}
+    const subject=document.getElementById('bulk-subject')?.value.trim()||window.activeSubject; const cat=document.getElementById('bulk-category')?.value||'교과세특';
+    for(let i=0;i<window.bulkStudents.length;i++){
+      const s=window.bulkStudents[i];
+      if(!s.observation){s.result=''; continue;}
+      const prompt=`고등학교 ${cat} 기록 초안을 작성한다. 과목/영역: ${subject}. 학생 관찰 기록: ${s.observation}. 희망 진로: ${s.career||'미입력'}. 관찰 기록에 없는 사실이나 수치를 만들어내지 말고, 학생의 구체적 행동-사고-성장 흐름이 드러나게 개조식 종결형으로 작성한다. 결과 본문만 출력하고 1,500바이트를 넘기지 않는다.`;
+      try{s.result=await requestAI(prompt);}catch(e){s.result=fallbackSeoteuk(s.observation,s.career||'희망 진로',subject);}
+      window.selectedBulkIndex=i; renderBulkList(); persistState();
+    }
+    if(btn){btn.disabled=false;btn.textContent='🚀 일괄 생성';}
+    if(typeof window.showToast==='function') window.showToast('일괄 생성이 완료되었습니다.','success');
+  };
+
+  window.openApiKeyModal = window.openApiKeyModal;
+
+  function patchLabelsForWebApp() {
+    const launch=document.getElementById('btn-launch-antigravity'); if(launch) launch.innerHTML='<span>🔐</span><span>서버 AI</span>';
+    const badge=document.getElementById('chat-provider-badge'); if(badge) badge.textContent='🔐 서버 AI';
+    const modalProvider=document.getElementById('provider-btn-antigravity'); if(modalProvider) modalProvider.textContent='🔐 서버 AI';
+    const p=document.getElementById('antigravity-prompt-snippet'); if(p) p.value='웹앱에서는 AI 요청을 /api/ai 서버 프록시로 전송합니다. GEMINI_API_KEY는 브라우저가 아니라 Vercel 환경변수에 저장합니다.';
+  }
+
+  function init() {
+    restoreState();
+    patchLabelsForWebApp();
+    renderSubjectDropdown(); renderCategoryButtons(); syncEditorFromState(); renderBulkList(); syncProviderUI();
+    window.switchMainTab('editor'); window.switchLeftPanel('chat'); window.switchSemester(window.activeSemester); window.switchVersion(window.activeVersion);
+    if (typeof window.renderRadarChart === 'function') window.renderRadarChart([90,88,86,89,84]);
+    if (typeof window.initSpeechRecognition === 'function') window.initSpeechRecognition();
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+  </script>
+<script>
+
+/* v1.1 robustness: speech output should never block interview UI */
+window.speakCurrentInterviewQ = function () {
+  const idx = Number(window.currentInterviewIndex);
+  const item = Array.isArray(window.interviewQuestions) ? window.interviewQuestions[idx] : null;
+  if (!item || !item.q) return;
+  if (!('speechSynthesis' in window) || typeof window.SpeechSynthesisUtterance !== 'function') {
+    if (typeof window.showToast === 'function') window.showToast('이 브라우저에서는 질문 음성 낭독을 지원하지 않습니다.','warning');
+    return;
+  }
+  try {
+    window.speechSynthesis.cancel();
+    const u = new window.SpeechSynthesisUtterance(item.q);
+    u.lang = 'ko-KR'; u.rate = 1.0;
+    window.speechSynthesis.speak(u);
+  } catch (_) {
+    if (typeof window.showToast === 'function') window.showToast('질문은 화면에 표시했습니다. 음성 낭독만 사용할 수 없습니다.','warning');
+  }
+};
+</script>
+
+<!-- ================= FIREBASE CLOUD ACCOUNT ================= -->
+<div id="cloud-account-modal" class="hidden fixed inset-0 z-[120] bg-slate-950/45 backdrop-blur-sm p-3 sm:p-6 items-center justify-center no-print">
+  <div class="w-full max-w-md rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <div class="flex items-center gap-2"><span class="text-xl">☁️</span><h3 class="font-black text-slate-900">Seoteuk Cloud</h3></div>
+        <p class="text-[11px] text-slate-500 mt-0.5">Google 로그인 · Firestore 자동저장</p>
+      </div>
+      <button type="button" onclick="closeCloudAccountModal()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 font-black">✕</button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div id="cloud-config-warning" class="hidden rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 leading-5">
+        Firebase 프로젝트 설정이 아직 없습니다. <b>firebase-config.js</b>에 웹 앱 구성값을 넣으면 로그인과 클라우드 저장이 활성화됩니다. 설정 전에도 로컬 저장 기능은 그대로 사용할 수 있습니다.
+      </div>
+      <div class="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+        <div class="flex items-center gap-3">
+          <div id="cloud-avatar" class="w-11 h-11 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xl overflow-hidden">👤</div>
+          <div class="min-w-0 flex-1">
+            <div id="cloud-account-name" class="font-black text-sm text-slate-900 truncate">로그인하지 않음</div>
+            <div id="cloud-account-email" class="text-[11px] text-slate-500 truncate">현재 자료는 이 기기에 저장됩니다.</div>
+          </div>
+          <span id="cloud-role-badge" class="hidden text-[10px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-black"></span>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-2">
+        <button id="btn-google-login" type="button" onclick="window.firebaseUI?.signInGoogle?.()" class="w-full py-3 rounded-2xl border border-slate-300 bg-white hover:bg-slate-50 font-black text-sm text-slate-800 flex items-center justify-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-black text-blue-600">G</span> Google 계정으로 로그인
+        </button>
+        <button id="btn-cloud-save-now" type="button" onclick="window.firebaseUI?.saveNow?.()" class="hidden w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm">☁️ 지금 클라우드에 저장</button>
+        <button id="btn-google-logout" type="button" onclick="window.firebaseUI?.signOut?.()" class="hidden w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">로그아웃</button>
+      </div>
+      <div class="flex items-center justify-between text-[11px] text-slate-500 px-1">
+        <span>상태</span><span id="cloud-detail-status" class="font-bold">로컬 모드</span>
+      </div>
+      <p class="text-[10px] leading-4 text-slate-400">API 키는 클라우드 동기화 대상이 아닙니다. 세특 작성 상태와 학생 일괄 작업 데이터만 사용자별 Firestore 공간에 저장됩니다.</p>
+    </div>
+  </div>
+</div>
+
+<div id="cloud-role-modal" class="hidden fixed inset-0 z-[130] bg-slate-950/55 backdrop-blur-sm p-4 items-center justify-center no-print">
+  <div class="w-full max-w-sm rounded-3xl bg-white shadow-2xl p-5">
+    <div class="w-12 h-12 mx-auto rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl">🎓</div>
+    <h3 class="mt-3 text-center font-black text-lg text-slate-900">사용 유형을 선택하세요</h3>
+    <p class="mt-1 text-center text-xs text-slate-500 leading-5">v2에서는 역할을 프로필 표시와 작업공간 설정에 사용합니다. 다른 사용자의 자료를 보는 관리자 권한은 부여하지 않습니다.</p>
+    <div class="grid grid-cols-2 gap-2 mt-5">
+      <button type="button" onclick="window.firebaseUI?.chooseRole?.('teacher')" class="p-4 rounded-2xl border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-left">
+        <div class="text-2xl">🧑‍🏫</div><div class="font-black mt-1 text-indigo-900">교사</div><div class="text-[10px] text-indigo-700 mt-1">세특 작성·관리 중심</div>
+      </button>
+      <button type="button" onclick="window.firebaseUI?.chooseRole?.('student')" class="p-4 rounded-2xl border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 text-left">
+        <div class="text-2xl">🧑‍🎓</div><div class="font-black mt-1 text-blue-900">학생</div><div class="text-[10px] text-blue-700 mt-1">탐구·면접 연습 중심</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.openCloudAccountModal = function(){
+    const m=document.getElementById('cloud-account-modal'); if(m){m.classList.remove('hidden');m.classList.add('flex');}
+  };
+  window.closeCloudAccountModal = function(){
+    const m=document.getElementById('cloud-account-modal'); if(m){m.classList.add('hidden');m.classList.remove('flex');}
+  };
+  window.firebaseUI = window.firebaseUI || {};
+</script>
+
+<script type="module" src="./firebase-cloud.js"></script>
+
 </body>
 </html>
