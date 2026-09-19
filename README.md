@@ -1,6 +1,6 @@
-# Seoteuk Mate v2.6 — GitHub Ready
+# Seoteuk Mate v2.7 — Teacher Pilot
 
-이 폴더는 **압축을 푼 뒤 내부 파일/폴더를 그대로 GitHub 저장소 루트에 업로드**하는 최종 배포용입니다.
+실제 교사 파일럿을 위한 **근거 우선(Evidence First)** 버전입니다. v2.6의 Multi API·Antigravity 기능은 유지하면서, 근거 부족 생성 차단·일괄처리 안전장치·간단모드·Knowledge 지연 로딩·모바일·접근성·익명 피드백을 강화했습니다.
 
 ## 1. GitHub 저장소 루트 모습
 
@@ -11,6 +11,7 @@ knowledge-pack.js
 rules-engine.js
 official-2026.js
 project-writer.js
+teacher-pilot.js
 firebase-config.js
 firebase-cloud.js
 manifest.webmanifest
