@@ -1,11 +1,11 @@
 /* Seoteuk Mate v2.7 Teacher Pilot — evidence-first pilot layer */
 (function(){
 'use strict';
-const V='2.7.0', METRIC_KEY='seoteukMate.pilotMetrics.v27', PREF_KEY='seoteukMate.pilotPrefs.v27';
+const V='2.7.1', METRIC_KEY='seoteukMate.pilotMetrics.v27', PREF_KEY='seoteukMate.pilotPrefs.v27';
 let knowledgePromise=null, originalDraft='', bulkCancel=false;
 const ACTION_RX=/(질문|확인|비교|분석|검토|설명|토론|수정|구성|작성|발표|제안|참여|탐구|적용|해석|조율|피드백|선택|분류|요약|근거|인용|반론|재구성|찾아|정리)/g;
 const VAGUE_RX=/(열심히|잘함|잘 함|적극적|성실|우수|탁월|좋았|훌륭|관심이 많|노력함)/g;
-const STRONG_RX=/(매우\s*탁월|탁월함|탁월한|완벽|압도적|최고|전문가\s*수준|우수함|우수한|완성도\s*높|주도적|급우들의\s*이해|청중과\s*상호작용|뛰어난|돋보임)/g;
+const STRONG_RX=/(매우\s*탁월|탁월함|탁월한|완벽|압도적|최고|전문가\s*수준|우수함|우수한|완성도\s*높|주도적|주도함|급우들의\s*이해|청중과\s*상호작용|뛰어난|돋보임|학문적\s*태도|역량을\s*(?:보임|나타냄|드러냄)|역량이\s*(?:우수|뛰어|돋보))/g;
 function norm(s){return String(s||'').replace(/\s+/g,' ').trim();}
 function toks(s){return [...new Set((norm(s).toLowerCase().match(/[가-힣a-z0-9]{2,}/g)||[]).filter(x=>!['학생','수업','활동','교과','관련','통해','내용','대한','있는','과정'].includes(x)))];}
 function toast(m,t='info'){window.showToast?.(m,t);}
@@ -51,19 +51,38 @@ function updateKnowledgeStatus(){
  e.innerHTML=`<div class="flex flex-wrap items-center justify-between gap-2"><div><b>📦 기본 지식팩</b> · ${Number(m.chunkCount||0).toLocaleString()}청크 · 필요할 때만 로드됨</div><button type="button" aria-label="기본 지식팩 자료목록" onclick="ensureKnowledgePackV27().then(()=>openDefaultKnowledgeSources())" class="font-black underline">자료목록</button></div><div class="mt-1 text-emerald-700">세특 생성의 사실 근거가 아니라 탐구 아이디어 참고용입니다.</div>`;
 }
 function numberRisks(draft,obs){const a=(String(draft).match(/\d+(?:[.,]\d+)?%?/g)||[]),b=new Set((String(obs).match(/\d+(?:[.,]\d+)?%?/g)||[]));return a.filter(x=>!b.has(x));}
+function hypotheticalFactRisk(draft,question){const q=String(question||'');if(!/(라면|다면|일까|인가|여부|가능성)/.test(q))return false;return /(나타난|존재한|확인된|드러난|발생한)\s*(차이|괴리|영향|원인)|사이에\s*(?:나타난|확인된|드러난)\s*차이|사이에\s*차이가\s*[^,.]{0,10}(?:발생|있었|존재|나타|확인|드러)/.test(String(draft||''));}
+function questionToRecord(question){
+ let q=norm(question).replace(/[?？]+$/,'');
+ q=q.replace(/인가$/,'인지').replace(/는가$/,'는지').replace(/한가$/,'한지').replace(/일까$/,'인지').replace(/까$/,'지');
+ return q?('활동 후 '+q+' 질문함.'):'';
+}
+function canonicalizeQuestionSentence(txt,question){
+ const safe=questionToRecord(question);if(!safe)return txt;
+ let parts=String(txt||'').split(/(?<=함\.|됨\.|임\.|보임\.|나타냄\.|드러냄\.)\s+/).filter(Boolean);
+ const idx=parts.findLastIndex(s=>/(질문|의문|후속|탐구를\s*확장)/.test(s));
+ if(idx>=0)parts[idx]=safe;else parts.push(safe);
+ return parts.join(' ').replace(/\s+/g,' ').trim();
+}
 function draftRisk(draft,obs){
  const ot=toks(obs), sentences=String(draft||'').split(/(?<=[.!?]|함\.|됨\.|임\.)\s+|\n+/).filter(Boolean);let inference=0;
  for(const s of sentences){const st=toks(s);if(st.length&&st.filter(x=>ot.includes(x)).length===0)inference++;}
  const strong=(draft.match(STRONG_RX)||[]).filter(x=>!String(obs).includes(x)), nums=numberRisks(draft,obs);
  return {risk:strong.length>0||nums.length>0||inference>Math.max(1,Math.floor(sentences.length/2)),strong,nums,inference,total:sentences.length};
 }
+window.__pilotDraftRisk=draftRisk;
 function setPilotRisk(r){window.__pilotRiskState=r;const b=document.getElementById('pilot-risk-banner');if(!b)return;
  b.className='mb-2 p-2.5 rounded-xl border text-xs '+(r?.risk?'bg-rose-50 border-rose-200 text-rose-900':'bg-emerald-50 border-emerald-200 text-emerald-900');
  b.innerHTML=r?.risk?`<b>⛔ 근거 밖 확장 가능성</b> · 교사 검토 전 복사/내보내기 잠금 (${r.inference}/${r.total}문장 추론 가능)`:'<b>✅ 근거 연결 1차 확인</b> · 최종 사실 확인은 교사가 수행합니다.';
 }
 async function conservativeRewrite(txt,obs,subject){
  const r=draftRisk(txt,obs);if(!r.risk)return txt;
- const p=`다음은 ${subject} 학교생활기록부 초안이다. 실제 교사 관찰은 아래 한 문단뿐이다. 관찰에 없는 평가·성과·역할·수치·청중 반응을 모두 제거하고, 관찰에서 직접 확인되는 행동과 그 행동에서 최소한으로 드러나는 사고과정만 보수적으로 윤문하라. 새 사실을 절대 추가하지 않는다. 결과 본문만 출력한다.\n\n[교사 관찰]\n${obs}\n\n[초안]\n${txt}`;
+ const p=`다음은 ${subject} 학교생활기록부 초안이다. 실제 교사 관찰은 아래 입력뿐이다. 관찰에 없는 평가·성과·역할·수치·청중 반응을 모두 제거하고, 직접 확인되는 행동과 그 행동에서 최소한으로 드러나는 사고과정만 보수적으로 윤문하라. 학생이 가정형 질문이나 가능성으로 제기한 내용은 확정된 사실로 바꾸지 말고 반드시 ‘…라는 질문을 제기함’처럼 질문 상태로 남긴다. 새 사실을 절대 추가하지 않는다. 결과 본문만 출력한다.\n\n[교사 관찰 및 근거]\n${obs}\n\n[초안]\n${txt}`;
+ try{return await window.__requestAI(p);}catch(_){return txt;}
+}
+async function preserveHypotheticalQuestion(txt,question,subject){
+ if(!question||!hypotheticalFactRisk(txt,question))return txt;
+ const p=`다음 ${subject} 학교생활기록부 초안에서 학생의 후속 질문 전제가 확정 사실처럼 바뀌었다. 다른 문장은 새 사실 없이 최대한 유지하고, 후속 질문 부분만 고쳐라.\n\n[학생이 실제 제기한 질문]\n${question}\n\n강제 규칙:\n- 질문 속 ‘라면/다면/있었다면/가능성’ 같은 조건 표현을 삭제하거나 사실로 확정하지 않는다.\n- ‘차이가 나타남/발생함/존재함’처럼 질문의 전제를 사실로 단정하지 않는다.\n- 후속 부분은 “...있었다면 ...인지 질문함” 또는 “...라는 질문을 제기함”처럼 질문 상태로 끝낸다.\n- 결과 본문만 출력한다.\n\n[초안]\n${txt}`;
  try{return await window.__requestAI(p);}catch(_){return txt;}
 }
 async function strictQuickGenerate(){
@@ -90,8 +109,8 @@ window.generateFromSubjectWriter=async function(){
  const standard=document.getElementById('v25-writer-standard-text')?.value||document.getElementById('v25-writer-standard-custom')?.value||'';
  const g=analyzeObservation(obs);if(!standard.trim()){toast('성취기준/수업 목표를 먼저 확인하세요.','warning');return;}
  if(!g.pass||norm(activity).length<5){showWriterPilotGate(g,activity);recordMetric('writer_block',{reason:'evidence'});return;}
- const t=performance.now();await originalWriter?.();const txt=document.getElementById('v25-writer-result')?.textContent||document.getElementById('seoteuk-textarea')?.value||'';
- if(txt){originalDraft=txt;window.__pilotOriginalDraft=txt;const r=draftRisk(txt,obs+' '+activity);setPilotRisk(r);recordMetric('writer_generate',{ms:Math.round(performance.now()-t),risk:r.risk});}
+ const t=performance.now();await originalWriter?.();let txt=document.getElementById('v25-writer-result')?.textContent||document.getElementById('seoteuk-textarea')?.value||'';
+ if(txt){const question=document.getElementById('v25-writer-question')?.value||'',subject=document.getElementById('v25-writer-subject')?.value||window.activeSubject||'교과';const support=[obs,activity,document.getElementById('v25-writer-artifact')?.value||'',document.getElementById('v25-writer-source')?.value||'',document.getElementById('v25-writer-role')?.value||'',document.getElementById('v25-writer-growth')?.value||'',question,document.getElementById('v25-writer-notes')?.value||''].join(' ');let r=draftRisk(txt,support),qRisk=hypotheticalFactRisk(txt,question);if(r.risk||qRisk){txt=await conservativeRewrite(txt,support,subject);r=draftRisk(txt,support);qRisk=hypotheticalFactRisk(txt,question);}if(qRisk){txt=await preserveHypotheticalQuestion(txt,question,subject);}txt=canonicalizeQuestionSentence(txt,question);r=draftRisk(txt,support);qRisk=hypotheticalFactRisk(txt,question);const out=document.getElementById('v25-writer-result');if(out)out.textContent=txt;window.setCurrentText?.(txt);const ta=document.getElementById('seoteuk-textarea');if(ta)ta.value=txt;window.updateNeisStats?.();if(qRisk)r={...r,risk:true,hypothetical:true,strong:[...(r.strong||[]),'가정형 질문 사실화']};originalDraft=txt;window.__pilotOriginalDraft=txt;setPilotRisk(r);recordMetric('writer_generate',{ms:Math.round(performance.now()-t),risk:r.risk,hypothetical:qRisk});}
 };
 function showWriterPilotGate(g,activity){
  let e=document.getElementById('v25-writer-evidence');if(!e)return;e.className='p-3 rounded-2xl border bg-amber-50 border-amber-200 text-xs text-amber-950';
@@ -187,9 +206,9 @@ function applyLastSubject(){
  sel.addEventListener('change',()=>{const q=getPrefs();q.lastSubject=sel.value;savePrefs(q);});
 }
 function cleanupVersionText(){
- document.title='Seoteuk Mate P.O.H.A.N.G v2.7 Teacher Pilot';
+ document.title='Seoteuk Mate P.O.H.A.N.G v2.7.1 Teacher Pilot';
  document.querySelectorAll('body *').forEach(e=>{if(e.children.length===0&&typeof e.textContent==='string'&&e.textContent.includes('v2.5'))e.textContent=e.textContent.replaceAll('v2.5','v2.7');});
- const sub=[...document.querySelectorAll('header *')].find(e=>(e.textContent||'').includes('v2.6 GITHUB READY'));if(sub)sub.textContent=(sub.textContent||'').replace('v2.6 GITHUB READY','v2.7 TEACHER PILOT');
+ const sub=[...document.querySelectorAll('header *')].find(e=>(e.textContent||'').includes('v2.6 GITHUB READY'));if(sub)sub.textContent=(sub.textContent||'').replace('v2.6 GITHUB READY','v2.7.1 TEACHER PILOT');
 }
 function installSaveBadge(){
  const h=document.querySelector('header > div:last-child');if(!h||document.getElementById('pilot-save-badge'))return;const b=document.createElement('span');b.id='pilot-save-badge';b.className='pilot-save-badge px-2 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold';b.textContent='로컬 저장됨';h.appendChild(b);
